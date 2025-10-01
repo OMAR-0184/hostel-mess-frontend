@@ -21,7 +21,12 @@ class DashboardScreen extends StatefulWidget {
   _DashboardScreenState createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAliveClientMixin {
+  
+  // This is required to keep the state alive
+  @override
+  bool get wantKeepAlive => true;
+
   @override
   void initState() {
     super.initState();
@@ -38,27 +43,41 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return 'Good Evening';
   }
 
+  Future<void> _refreshData() async {
+    await Future.wait([
+      Provider.of<BookingProvider>(context, listen: false)
+          .fetchTodaysBooking(forceRefresh: true),
+      Provider.of<NoticeProvider>(context, listen: false)
+          .fetchNotices(forceRefresh: true),
+    ]);
+  }
+
   @override
   Widget build(BuildContext context) {
+    super.build(context); // This is required for AutomaticKeepAliveClientMixin
     final User? user = Provider.of<AuthProvider>(context).user;
     final theme = Theme.of(context);
 
     return Scaffold(
       backgroundColor: theme.colorScheme.background,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildGreetingSection(user, theme),
-              const SizedBox(height: 24),
-              _buildQuickActions(context),
-              const SizedBox(height: 24),
-              _buildTodaysBookingSection(theme),
-              const SizedBox(height: 24),
-              _buildLatestNoticesSection(theme), // Updated to show multiple notices
-            ],
+        child: RefreshIndicator(
+          onRefresh: _refreshData,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildGreetingSection(user, theme),
+                const SizedBox(height: 24),
+                _buildQuickActions(context),
+                const SizedBox(height: 24),
+                _buildTodaysBookingSection(theme),
+                const SizedBox(height: 24),
+                _buildLatestNoticesSection(theme),
+              ],
+            ),
           ),
         ),
       ),
@@ -103,7 +122,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _buildActionItem(context, icon: Icons.restaurant_menu, label: 'Book Meal', screen: const BookingScreen()),
         _buildActionItem(context, icon: Icons.calendar_today, label: 'View Menu', screen: const MenuScreen()),
         _buildActionItem(context, icon: Icons.history, label: 'My Bookings', screen: MyBookingsScreen()),
-        _buildActionItem(context, icon: Icons.person_outline, label: 'Profile', screen: ProfileScreen()),
+        _buildActionItem(context, icon: Icons.person_outline, label: 'Profile', screen: const ProfileScreen()),
       ],
     );
   }
@@ -119,7 +138,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           shadowColor: Colors.black.withOpacity(0.1),
           child: InkWell(
             onTap: () {
-              // COMPLETED: Navigation logic added
               Navigator.push(context, MaterialPageRoute(builder: (context) => screen));
             },
             borderRadius: BorderRadius.circular(20),
@@ -144,34 +162,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
         const SizedBox(height: 16),
         Consumer<BookingProvider>(
           builder: (context, provider, child) {
-            if (provider.isLoadingTodaysBooking) {
+            if (provider.isLoadingTodaysBooking && provider.todaysBooking == null) {
               return const Center(child: CircularProgressIndicator());
             }
             final lunchItems = provider.todaysBooking?['lunch_pick'] as List<dynamic>? ?? [];
             final dinnerItems = provider.todaysBooking?['dinner_pick'] as List<dynamic>? ?? [];
 
-            return Row(
-              children: [
-                Expanded(
-                  child: _buildMealCard(
-                    theme: theme,
-                    title: 'Lunch',
-                    icon: Icons.wb_sunny_outlined,
-                    gradientColors: [Colors.orange.shade300, Colors.orange.shade600],
-                    bookedItems: lunchItems.map((item) => item.toString()).toList(),
+            // FIX: Wrapped the Row with IntrinsicHeight to synchronize card heights
+            return IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: _buildMealCard(
+                      theme: theme,
+                      title: 'Lunch',
+                      icon: Icons.wb_sunny_outlined,
+                      gradientColors: [Colors.orange.shade300, Colors.orange.shade600],
+                      bookedItems: lunchItems.map((item) => item.toString()).toList(),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildMealCard(
-                    theme: theme,
-                    title: 'Dinner',
-                    icon: Icons.nightlight_round_outlined,
-                    gradientColors: [Colors.indigo.shade300, Colors.indigo.shade600],
-                    bookedItems: dinnerItems.map((item) => item.toString()).toList(),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildMealCard(
+                      theme: theme,
+                      title: 'Dinner',
+                      icon: Icons.nightlight_round_outlined,
+                      gradientColors: [Colors.indigo.shade300, Colors.indigo.shade600],
+                      bookedItems: dinnerItems.map((item) => item.toString()).toList(),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             );
           },
         ),
@@ -237,13 +259,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         const SizedBox(height: 16),
         Consumer<NoticeProvider>(
           builder: (context, provider, child) {
-            if (provider.isLoading) {
+            if (provider.isLoading && provider.notices.isEmpty) {
               return const Center(child: CircularProgressIndicator());
             }
             if (provider.notices.isEmpty) {
               return const Text("No new notices available.", style: TextStyle(fontSize: 16, color: Colors.grey));
             }
-            // Take the first 3 notices, or fewer if the list is smaller
             final latestNotices = provider.notices.take(3).toList();
             return Column(
               children: latestNotices.map((notice) => _buildNoticeCard(theme, notice)).toList(),
@@ -256,7 +277,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildNoticeCard(ThemeData theme, Notice notice) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 12.0), // Add space between notice cards
+      margin: const EdgeInsets.only(bottom: 12.0),
       elevation: 4,
       shadowColor: Colors.black.withOpacity(0.1),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
