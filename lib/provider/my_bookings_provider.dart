@@ -30,11 +30,16 @@ class MyBookingsProvider with ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
 
+  // Caching flag
+  bool _hasFetched = false;
+
   List<BookingHistoryItem> get bookingHistory => _bookingHistory;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
-  Future<void> fetchBookingHistory() async {
+  Future<void> fetchBookingHistory({bool forceRefresh = false}) async {
+    if (_hasFetched && !forceRefresh) return;
+
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -44,6 +49,7 @@ class MyBookingsProvider with ChangeNotifier {
       if (response.statusCode == 200) {
         final List<dynamic> responseData = json.decode(response.body);
         _bookingHistory = responseData.map((data) => BookingHistoryItem.fromJson(data)).toList();
+        _hasFetched = true; // Mark as fetched
       } else {
         final errorData = json.decode(response.body);
         _errorMessage = errorData['detail'] ?? 'Failed to load booking history.';

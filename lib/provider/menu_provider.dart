@@ -25,11 +25,22 @@ class MenuProvider with ChangeNotifier {
   bool _isLoading = false;
   String? _error;
 
+  // Caching map
+  final Map<DateTime, DailyMenu> _menuCache = {};
+
   DailyMenu? get menu => _menu;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
   Future<void> fetchMenuForDate(DateTime date) async {
+    final dateOnly = DateTime(date.year, date.month, date.day);
+    if (_menuCache.containsKey(dateOnly)) {
+      _menu = _menuCache[dateOnly];
+      _error = null; // Clear previous error
+      notifyListeners();
+      return;
+    }
+
     _isLoading = true;
     _error = null;
     _menu = null; // Clear previous menu
@@ -40,6 +51,7 @@ class MenuProvider with ChangeNotifier {
       final response = await _apiService.get('/menus/$dateString');
       if (response.statusCode == 200) {
         _menu = DailyMenu.fromJson(json.decode(response.body));
+        _menuCache[dateOnly] = _menu!; // Store in cache
       } else if (response.statusCode == 404) {
         _error = 'No menu has been set for this date.';
       } else {

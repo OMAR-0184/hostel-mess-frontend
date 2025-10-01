@@ -42,6 +42,10 @@ class AdminProvider with ChangeNotifier {
   String? _error;
   bool _isSubmitting = false;
 
+  // Caching flags
+  bool _hasFetchedUsers = false;
+  final Map<DateTime, MealList> _mealListCache = {};
+
   // Public getters to access the state
   List<User> get users => _users;
   MealList? get mealList => _mealList;
@@ -50,7 +54,9 @@ class AdminProvider with ChangeNotifier {
   bool get isSubmitting => _isSubmitting;
 
   /// Fetches the list of all users from the /users/ endpoint.
-  Future<void> fetchAllUsers() async {
+  Future<void> fetchAllUsers({bool forceRefresh = false}) async {
+    if (_hasFetchedUsers && !forceRefresh) return;
+
     _isLoading = true;
     notifyListeners();
     try {
@@ -58,6 +64,7 @@ class AdminProvider with ChangeNotifier {
       if (response.statusCode == 200) {
         final List<dynamic> responseData = json.decode(response.body);
         _users = responseData.map((data) => User.fromJson(data)).toList();
+        _hasFetchedUsers = true; // Mark as fetched
       }
     } catch (e) {
       print(e);
@@ -67,6 +74,13 @@ class AdminProvider with ChangeNotifier {
   }
 
   Future<void> fetchMealListForDate(DateTime date) async {
+    final dateOnly = DateTime(date.year, date.month, date.day);
+    if (_mealListCache.containsKey(dateOnly)) {
+      _mealList = _mealListCache[dateOnly];
+      notifyListeners();
+      return;
+    }
+
     _isLoading = true;
     _error = null;
     _mealList = null;
@@ -77,6 +91,7 @@ class AdminProvider with ChangeNotifier {
       final response = await _apiService.get('/meallist/$dateString');
       if (response.statusCode == 200) {
         _mealList = MealList.fromJson(json.decode(response.body));
+        _mealListCache[dateOnly] = _mealList!; // Cache the result
       } else {
         _error = "No bookings found for this date.";
       }

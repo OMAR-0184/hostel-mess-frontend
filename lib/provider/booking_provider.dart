@@ -13,6 +13,7 @@ class BookingProvider with ChangeNotifier {
   // New properties for fetching today's booking status
   Map<String, dynamic>? _todaysBooking;
   bool _isLoadingTodaysBooking = false;
+  bool _hasFetchedTodaysBooking = false;
 
   // Getters for the original state
   bool get isSubmitting => _isSubmitting;
@@ -43,6 +44,9 @@ class BookingProvider with ChangeNotifier {
 
       if (response.statusCode == 201) {
         _isSubmitting = false;
+        if (DateUtils.isSameDay(date, DateTime.now())) {
+          await fetchTodaysBooking(forceRefresh: true);
+        }
         notifyListeners();
         return true;
       } else {
@@ -65,7 +69,13 @@ class BookingProvider with ChangeNotifier {
      final dateString = DateFormat('yyyy-MM-dd').format(date);
      try {
        final response = await _apiService.delete('/bookings/$dateString');
-       return response.statusCode == 204;
+       if (response.statusCode == 204) {
+         if (DateUtils.isSameDay(date, DateTime.now())) {
+           await fetchTodaysBooking(forceRefresh: true);
+         }
+         return true;
+       }
+       return false;
      } catch (e) {
        print(e);
        return false;
@@ -75,9 +85,12 @@ class BookingProvider with ChangeNotifier {
   /// Fetches the current user's meal booking for today.
   /// Required for the dashboard screen.
   /// Corresponds to the GET /meallist/me/today endpoint.
-  Future<void> fetchTodaysBooking() async {
+  Future<void> fetchTodaysBooking({bool forceRefresh = false}) async {
+    if (_hasFetchedTodaysBooking && !forceRefresh) return;
+
     _isLoadingTodaysBooking = true;
-    _todaysBooking = null;
+    // Don't clear previous data instantly for a smoother UI
+    // _todaysBooking = null; 
     notifyListeners();
     
     try {
@@ -85,9 +98,9 @@ class BookingProvider with ChangeNotifier {
       if (response.statusCode == 200) {
         _todaysBooking = json.decode(response.body);
       } else {
-        // It's not an error if nothing is booked, so we just clear the data.
         _todaysBooking = null;
       }
+      _hasFetchedTodaysBooking = true; // Mark as fetched even on failure to prevent repeated calls
     } catch (e) {
       print("Error fetching today's booking: $e");
       _todaysBooking = null;
