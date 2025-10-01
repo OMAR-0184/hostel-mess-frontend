@@ -1,5 +1,7 @@
+// login_screen.dart
+
 import 'package:flutter/material.dart';
-import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import '../provider/auth_provider.dart';
 import 'register_screen.dart';
@@ -17,30 +19,19 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
 
   void _login() async {
+    FocusManager.instance.primaryFocus?.unfocus();
     setState(() => _isLoading = true);
-    // Get the provider instance.
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-
-    // Attempt the login.
     bool success = await authProvider.login(
       _emailController.text.trim(),
       _passwordController.text.trim(),
     );
-
-    // If the login was not successful...
     if (!success && mounted) {
-      // FIX: Get the specific error message from the provider.
       final errorMessage = authProvider.errorMessage ?? 'Login Failed! Check credentials.';
-
-      // FIX: Show the specific error in the SnackBar.
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(errorMessage),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text(errorMessage), backgroundColor: Colors.redAccent),
       );
     }
-
     if (mounted) {
       setState(() => _isLoading = false);
     }
@@ -49,43 +40,37 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.blue.shade200, Colors.purple.shade200],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
+      backgroundColor: Colors.white,
+      body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(32.0),
-            child: AnimationLimiter(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: AnimationConfiguration.toStaggeredList(
-                  duration: const Duration(milliseconds: 375),
-                  childAnimationBuilder: (widget) => SlideAnimation(
-                    verticalOffset: 50.0,
-                    child: FadeInAnimation(child: widget),
-                  ),
-                  children: [
-                    const Text(
-                      'Hostel Mess',
-                      style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.white),
-                    ),
-                    const SizedBox(height: 50),
-                    _buildTextField(_emailController, 'Email', Icons.email),
-                    const SizedBox(height: 20),
-                    _buildTextField(_passwordController, 'Password', Icons.lock, obscureText: true),
-                    const SizedBox(height: 40),
-                    _isLoading
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : _buildLoginButton(),
-                    _buildRegisterButton(),
-                  ],
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Lottie.asset(
+                  'assets/login_animation.json',
+                  height: 220,
                 ),
-              ),
+                const SizedBox(height: 24),
+                const Text(
+                  'Sign In',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF1E232C)),
+                ),
+                const SizedBox(height: 32),
+                // UPDATED: Calls to the new text field widget
+                _buildTextField(_emailController, 'Email', Icons.email_outlined, isEmail: true),
+                const SizedBox(height: 16),
+                _buildTextField(_passwordController, 'Password', Icons.lock_outline, obscureText: true),
+                const SizedBox(height: 24),
+                _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _buildLoginButton(),
+                const SizedBox(height: 32),
+                _buildRegisterButton(),
+              ],
             ),
           ),
         ),
@@ -93,52 +78,53 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String label, IconData icon, {bool obscureText = false}) {
+  // WIDGET: Modernized reusable TextField
+  Widget _buildTextField(TextEditingController controller, String labelText, IconData icon, {bool obscureText = false, bool isEmail = false}) {
     return TextField(
       controller: controller,
       obscureText: obscureText,
-      style: const TextStyle(color: Colors.white),
+      keyboardType: isEmail ? TextInputType.emailAddress : TextInputType.text,
       decoration: InputDecoration(
-        prefixIcon: Icon(icon, color: Colors.white70),
-        labelText: label,
-        labelStyle: const TextStyle(color: Colors.white70),
+        labelText: labelText,
+        prefixIcon: Icon(icon, color: Colors.grey[600]),
+        labelStyle: const TextStyle(color: Colors.grey),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(25.0),
-          borderSide: const BorderSide(color: Colors.white70),
+          borderRadius: BorderRadius.circular(10.0),
+          borderSide: BorderSide(color: Colors.grey.shade300),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(25.0),
-          borderSide: const BorderSide(color: Colors.white),
+          borderRadius: BorderRadius.circular(10.0),
+          borderSide: const BorderSide(color: Color(0xFF0D6EFE), width: 2.0),
         ),
       ),
     );
   }
 
   Widget _buildLoginButton() {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: _login,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.blue.shade800,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25.0)),
-        ),
-        child: const Text('LOGIN', style: TextStyle(fontSize: 18)),
+    return ElevatedButton(
+      onPressed: _login,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFF0D6EFE),
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+        elevation: 0,
       ),
+      child: const Text('Login', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
     );
   }
 
   Widget _buildRegisterButton() {
-    return TextButton(
-      onPressed: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (context) => const RegisterScreen()),
-      ),
-      child: const Text(
-        'Don\'t have an account? Sign Up',
-        style: TextStyle(color: Colors.white70),
-      ),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Text("Haven't any account?"),
+        TextButton(
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (context) => const RegisterScreen()),
+          ),
+          child: const Text('Sign up', style: TextStyle(color: Color(0xFF0D6EFE), fontWeight: FontWeight.bold)),
+        ),
+      ],
     );
   }
 }

@@ -1,7 +1,7 @@
 name: hostel_mess_app
 description: A new Flutter project for a hostel mess.
 
-publish_to: 'none'
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
 version: 1.0.0+1
 
@@ -11,20 +11,29 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+
+  # UTILITY PACKAGES
   cupertino_icons: ^1.0.2
   http: ^1.2.1
   provider: ^6.1.2
   shared_preferences: ^2.2.3
-  flutter_staggered_animations: ^1.1.1
   intl: ^0.19.0
+  
+  # UI & ANIMATION PACKAGES
+  flutter_staggered_animations: ^1.1.1
   google_nav_bar: ^5.0.6  # For the modern navigation bar
   google_fonts: ^6.1.0    # For beautiful fonts
-  # The problematic packages have been removed.
+  lottie: ^3.1.2          # ADDED: For Lottie animations
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
   flutter_lints: ^3.0.0
 
 flutter:
   uses-material-design: true
+
+  # ADDED: assets section to include your Lottie files
+  assets:
+    - assets/
