@@ -1,6 +1,7 @@
 // login_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import '../provider/auth_provider.dart';
@@ -45,32 +46,44 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Lottie.asset(
-                  'assets/login_animation.json',
-                  height: 220,
+            // ADDED: AnimationLimiter is the parent for the animations
+            child: AnimationLimiter(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                // UPDATED: Wrapped children with the animation configuration
+                children: AnimationConfiguration.toStaggeredList(
+                  duration: const Duration(milliseconds: 500),
+                  childAnimationBuilder: (widget) => SlideAnimation(
+                    verticalOffset: 50.0,
+                    child: FadeInAnimation(
+                      child: widget,
+                    ),
+                  ),
+                  children: [
+                    Lottie.asset(
+                      'assets/login_animation.json',
+                      height: 220,
+                    ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      'Sign In',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF1E232C)),
+                    ),
+                    const SizedBox(height: 32),
+                    _buildTextField(_emailController, 'Email', Icons.email_outlined, isEmail: true),
+                    const SizedBox(height: 16),
+                    _buildTextField(_passwordController, 'Password', Icons.lock_outline, obscureText: true),
+                    const SizedBox(height: 24),
+                    _isLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : _buildLoginButton(),
+                    const SizedBox(height: 32),
+                    _buildRegisterButton(),
+                  ],
                 ),
-                const SizedBox(height: 24),
-                const Text(
-                  'Sign In',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF1E232C)),
-                ),
-                const SizedBox(height: 32),
-                // UPDATED: Calls to the new text field widget
-                _buildTextField(_emailController, 'Email', Icons.email_outlined, isEmail: true),
-                const SizedBox(height: 16),
-                _buildTextField(_passwordController, 'Password', Icons.lock_outline, obscureText: true),
-                const SizedBox(height: 24),
-                _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _buildLoginButton(),
-                const SizedBox(height: 32),
-                _buildRegisterButton(),
-              ],
+              ),
             ),
           ),
         ),
@@ -78,7 +91,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // WIDGET: Modernized reusable TextField
   Widget _buildTextField(TextEditingController controller, String labelText, IconData icon, {bool obscureText = false, bool isEmail = false}) {
     return TextField(
       controller: controller,

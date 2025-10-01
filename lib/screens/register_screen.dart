@@ -1,6 +1,7 @@
 // register_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import '../provider/auth_provider.dart';
@@ -49,46 +50,59 @@ class _RegisterScreenState extends State<RegisterScreen> {
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Center(
+          // ADDED: SingleChildScrollView to fix the keyboard issue.
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Lottie.asset(
-                  'assets/register_animation.json',
-                  height: 180,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+              child: AnimationLimiter(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: AnimationConfiguration.toStaggeredList(
+                    duration: const Duration(milliseconds: 500),
+                    childAnimationBuilder: (widget) => SlideAnimation(
+                      verticalOffset: 50.0,
+                      child: FadeInAnimation(
+                        child: widget,
+                      ),
+                    ),
+                    children: [
+                      Lottie.asset(
+                        'assets/register_animation.json',
+                        height: 140,
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Sign Up',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF1E232C)),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Use proper information to continue',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                      const SizedBox(height: 24),
+                      _buildTextField(_nameController, 'Full name', Icons.person_outline),
+                      const SizedBox(height: 12),
+                      _buildTextField(_emailController, 'Email address', Icons.email_outlined, isEmail: true),
+                      const SizedBox(height: 12),
+                      _buildTextField(_passwordController, 'Password', Icons.lock_outline, obscureText: true),
+                      const SizedBox(height: 12),
+                      _buildTextField(_roomNumberController, 'Room Number', Icons.room_outlined, isNumber: true),
+                      const SizedBox(height: 16),
+                      _buildTermsAndConditions(),
+                      const SizedBox(height: 16),
+                      _isLoading
+                          ? const Center(child: CircularProgressIndicator())
+                          : _buildRegisterButton(),
+                      const SizedBox(height: 20),
+                      _buildLoginButton(),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 24),
-                const Text(
-                  'Sign Up',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF1E232C)),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Use proper information to continue',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey),
-                ),
-                const SizedBox(height: 32),
-                // UPDATED: Calls to the new text field widget
-                _buildTextField(_nameController, 'Full name', Icons.person_outline),
-                const SizedBox(height: 16),
-                _buildTextField(_emailController, 'Email address', Icons.email_outlined, isEmail: true),
-                const SizedBox(height: 16),
-                _buildTextField(_passwordController, 'Password', Icons.lock_outline, obscureText: true),
-                const SizedBox(height: 16),
-                _buildTextField(_roomNumberController, 'Room Number', Icons.room_outlined, isNumber: true),
-                const SizedBox(height: 24),
-                _buildTermsAndConditions(),
-                const SizedBox(height: 24),
-                _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _buildRegisterButton(),
-                const SizedBox(height: 32),
-                _buildLoginButton(),
-              ],
+              ),
             ),
           ),
         ),
@@ -96,7 +110,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  // WIDGET: Modernized reusable TextField
   Widget _buildTextField(TextEditingController controller, String labelText, IconData icon, {bool obscureText = false, bool isEmail = false, bool isNumber = false}) {
     return TextField(
       controller: controller,
