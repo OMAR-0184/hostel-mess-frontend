@@ -1,9 +1,11 @@
 // lib/screens/notice_screen.dart
 
-import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:flutter/material.dart'; // CORRECTED IMPORT
+import 'package:intl/intl.dart'; // CORRECTED IMPORT
+import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import '../provider/auth_provider.dart';
 import '../provider/notice_provider.dart';
 
 class NoticeScreen extends StatefulWidget {
@@ -14,7 +16,6 @@ class NoticeScreen extends StatefulWidget {
 }
 
 class _NoticeScreenState extends State<NoticeScreen> {
-  // --- CORE LOGIC - UNCHANGED ---
   @override
   void initState() {
     super.initState();
@@ -22,11 +23,50 @@ class _NoticeScreenState extends State<NoticeScreen> {
       Provider.of<NoticeProvider>(context, listen: false).fetchNotices();
     });
   }
-  // --- END OF CORE LOGIC ---
+
+  Future<void> _refreshNotices() async {
+    await Provider.of<NoticeProvider>(context, listen: false).fetchNotices(forceRefresh: true);
+  }
+
+  void _showDeleteConfirmationDialog(Notice notice) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Notice?'),
+          content: Text('Are you sure you want to delete the notice titled "${notice.title}"? This action cannot be undone.'),
+          actions: [
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            TextButton(
+              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+              onPressed: () async {
+                Navigator.of(context).pop();
+                final success = await Provider.of<NoticeProvider>(context, listen: false).deleteNotice(notice.id);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(success ? 'Notice deleted successfully.' : 'Failed to delete notice.'),
+                      backgroundColor: success ? Colors.green : Colors.red,
+                    ),
+                  );
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final user = Provider.of<AuthProvider>(context).user;
+    final bool isAdmin = user?.role == 'convenor' || user?.role == 'mess_committee';
+
     return Scaffold(
       backgroundColor: theme.colorScheme.background,
       body: Consumer<NoticeProvider>(
@@ -40,10 +80,13 @@ class _NoticeScreenState extends State<NoticeScreen> {
               message: 'No notices have been posted yet.',
             );
           }
-          return RefreshIndicator(
-            onRefresh: () => noticeProvider.fetchNotices(),
+          return LiquidPullToRefresh(
+            onRefresh: _refreshNotices,
+            color: theme.colorScheme.primary,
+            backgroundColor: theme.colorScheme.secondary.withOpacity(0.5),
             child: AnimationLimiter(
               child: ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
                 itemCount: noticeProvider.notices.length,
                 itemBuilder: (BuildContext context, int index) {
@@ -54,7 +97,7 @@ class _NoticeScreenState extends State<NoticeScreen> {
                     child: SlideAnimation(
                       verticalOffset: 50.0,
                       child: FadeInAnimation(
-                        child: _buildNoticeCard(theme, notice),
+                        child: _buildNoticeCard(theme, notice, isAdmin),
                       ),
                     ),
                   );
@@ -67,19 +110,17 @@ class _NoticeScreenState extends State<NoticeScreen> {
     );
   }
 
-  /// A modernized card for displaying a single notice.
-  Widget _buildNoticeCard(ThemeData theme, Notice notice) {
+  Widget _buildNoticeCard(ThemeData theme, Notice notice, bool isAdmin) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16.0),
       elevation: 4,
       shadowColor: Colors.black.withOpacity(0.1),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      clipBehavior: Clip.antiAlias, // Ensures the border color respects the rounded corners
+      clipBehavior: Clip.antiAlias,
       child: IntrinsicHeight(
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Accent color border on the left
             Container(
               width: 8,
               color: theme.colorScheme.primary,
@@ -90,9 +131,23 @@ class _NoticeScreenState extends State<NoticeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      notice.title,
-                      style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            notice.title,
+                            style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        if (isAdmin)
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                            onPressed: () => _showDeleteConfirmationDialog(notice),
+                            tooltip: 'Delete Notice',
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -114,7 +169,6 @@ class _NoticeScreenState extends State<NoticeScreen> {
     );
   }
 
-  /// A centered widget to display when the list is empty.
   Widget _buildInfoMessage({required IconData icon, required String message}) {
     return Center(
       child: Column(

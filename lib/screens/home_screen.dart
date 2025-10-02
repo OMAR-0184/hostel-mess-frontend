@@ -1,10 +1,11 @@
 // screens/home_screen.dart
 
+import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../provider/auth_provider.dart';
 
-// Import the screens (we will use the visually updated versions)
+// Import the screens
 import 'dashboard_screen.dart';
 import 'booking_screen.dart';
 import 'my_bookings_screen.dart';
@@ -20,21 +21,45 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  late PageController _pageController;
 
-  // We use the new, beautifully designed screens here
+  final iconList = <IconData>[
+    Icons.home_outlined,
+    Icons.restaurant_menu_outlined,
+    Icons.history_outlined,
+    Icons.notifications_outlined,
+    Icons.person_outline,
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
   static final List<Widget> _widgetOptions = <Widget>[
-    DashboardScreen(),      // The new dashboard with greeting and notices
-    const BookingScreen(),  // The new booking screen with gradient cards
+    DashboardScreen(),
+    const BookingScreen(),
     MyBookingsScreen(),
     NoticeScreen(),
     ProfileScreen(),
   ];
 
-  // Your original, simple, and effective navigation logic is preserved
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeOutCubic,
+    );
   }
 
   @override
@@ -43,20 +68,24 @@ class _HomeScreenState extends State<HomeScreen> {
 
     String getTitle(int index) {
       switch (index) {
-        case 0: return 'Dashboard';
-        case 1: return 'Book a Meal';
-        case 2: return 'My Bookings';
-        case 3: return 'Notices';
-        case 4: return 'Profile';
-        default: return 'Hostel Mess';
+        case 0:
+          return 'Dashboard';
+        case 1:
+          return 'Book a Meal';
+        case 2:
+          return 'My Bookings';
+        case 3:
+          return 'Notices';
+        case 4:
+          return 'Profile';
+        default:
+          return 'Hostel Mess';
       }
     }
 
     return Scaffold(
-      // Use the theme's background color for a consistent look
       backgroundColor: theme.colorScheme.background,
       appBar: AppBar(
-        // A modern, clean AppBar style
         backgroundColor: theme.colorScheme.background,
         elevation: 0,
         title: Text(
@@ -76,49 +105,29 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      // The body transitions instantly on tap, just like your original app
-      body: Center(
-        child: _widgetOptions.elementAt(_selectedIndex),
+      // --- UPDATED BODY TO PREVENT SWIPING ---
+      body: PageView(
+        controller: _pageController,
+        // This disables the swipe gesture between pages
+        physics: const NeverScrollableScrollPhysics(),
+        children: _widgetOptions,
       ),
-      // Here is the styled BottomNavigationBar
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.restaurant_menu_outlined),
-            activeIcon: Icon(Icons.restaurant_menu),
-            label: 'Book Meal',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.history_outlined),
-            activeIcon: Icon(Icons.history),
-            label: 'My Bookings',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications_outlined),
-            activeIcon: Icon(Icons.notifications),
-            label: 'Notices',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        // Style the navigation bar
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: AnimatedBottomNavigationBar(
+        icons: iconList,
+        activeIndex: _selectedIndex,
+        gapLocation: GapLocation.none,
+        notchSmoothness: NotchSmoothness.verySmoothEdge,
+        leftCornerRadius: 32,
+        rightCornerRadius: 32,
+        onTap: (index) => _onItemTapped(index),
+        activeColor: theme.colorScheme.primary,
+        inactiveColor: Colors.grey,
         backgroundColor: Colors.white,
-        selectedItemColor: theme.colorScheme.primary, // Your theme's primary color
-        unselectedItemColor: Colors.grey.shade600,
-        onTap: _onItemTapped,
-        // These are important for the styling to work correctly
-        type: BottomNavigationBarType.fixed,
-        showUnselectedLabels: true,
-        elevation: 5,
+        shadow: BoxShadow(
+          color: Colors.black.withOpacity(0.1),
+          blurRadius: 10,
+        ),
       ),
     );
   }

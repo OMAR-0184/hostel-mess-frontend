@@ -1,6 +1,7 @@
 // lib/screens/dashboard_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart'; // Import the package
 import 'package:provider/provider.dart';
 import '../models/user.dart';
 import '../provider/auth_provider.dart';
@@ -23,7 +24,6 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAliveClientMixin {
   
-  // This is required to keep the state alive
   @override
   bool get wantKeepAlive => true;
 
@@ -54,15 +54,19 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // This is required for AutomaticKeepAliveClientMixin
+    super.build(context);
     final User? user = Provider.of<AuthProvider>(context).user;
     final theme = Theme.of(context);
 
     return Scaffold(
       backgroundColor: theme.colorScheme.background,
       body: SafeArea(
-        child: RefreshIndicator(
+        child: LiquidPullToRefresh(
           onRefresh: _refreshData,
+          color: theme.colorScheme.primary,
+          backgroundColor: theme.colorScheme.secondary.withOpacity(0.5),
+          height: 150,
+          animSpeedFactor: 2,
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
@@ -84,7 +88,8 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
     );
   }
 
-  /// 1. A more personal and dynamic greeting section
+  // ... rest of the widgets in this file remain the same
+  
   Widget _buildGreetingSection(User? user, ThemeData theme) {
     return Row(
       children: [
@@ -114,7 +119,6 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
     );
   }
 
-  /// 2. Fills screen space and provides useful shortcuts
   Widget _buildQuickActions(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -153,7 +157,6 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
     );
   }
 
-  /// 3. The "beautiful" meal status section
   Widget _buildTodaysBookingSection(ThemeData theme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -168,7 +171,6 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
             final lunchItems = provider.todaysBooking?['lunch_pick'] as List<dynamic>? ?? [];
             final dinnerItems = provider.todaysBooking?['dinner_pick'] as List<dynamic>? ?? [];
 
-            // FIX: Wrapped the Row with IntrinsicHeight to synchronize card heights
             return IntrinsicHeight(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -250,7 +252,6 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
     );
   }
 
-  /// 4. The "serious and eye-catching" notice section, now showing top 3 notices
   Widget _buildLatestNoticesSection(ThemeData theme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

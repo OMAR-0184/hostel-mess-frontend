@@ -1,6 +1,7 @@
 // lib/screens/my_bookings_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart'; // Import the package
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../provider/my_bookings_provider.dart';
@@ -18,6 +19,10 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<MyBookingsProvider>(context, listen: false).fetchBookingHistory();
     });
+  }
+
+  Future<void> _refreshBookings() async {
+    await Provider.of<MyBookingsProvider>(context, listen: false).fetchBookingHistory(forceRefresh: true);
   }
 
   @override
@@ -44,23 +49,29 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
             );
           }
 
-          return AnimationLimiter(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
-              itemCount: provider.bookingHistory.length,
-              itemBuilder: (context, index) {
-                final booking = provider.bookingHistory[index];
-                return AnimationConfiguration.staggeredList(
-                  position: index,
-                  duration: const Duration(milliseconds: 400),
-                  child: SlideAnimation(
-                    verticalOffset: 50.0,
-                    child: FadeInAnimation(
-                      child: _buildTimelineCard(theme, booking, index),
+          return LiquidPullToRefresh(
+            onRefresh: _refreshBookings,
+            color: theme.colorScheme.primary,
+            backgroundColor: theme.colorScheme.secondary.withOpacity(0.5),
+            child: AnimationLimiter(
+              child: ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
+                itemCount: provider.bookingHistory.length,
+                itemBuilder: (context, index) {
+                  final booking = provider.bookingHistory[index];
+                  return AnimationConfiguration.staggeredList(
+                    position: index,
+                    duration: const Duration(milliseconds: 400),
+                    child: SlideAnimation(
+                      verticalOffset: 50.0,
+                      child: FadeInAnimation(
+                        child: _buildTimelineCard(theme, booking, index),
+                      ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
           );
         },
@@ -68,17 +79,16 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
     );
   }
 
-  /// The main card widget, designed as a timeline event.
+  // ... rest of the widgets in this file remain the same
+  
   Widget _buildTimelineCard(ThemeData theme, BookingHistoryItem booking, int index) {
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // The timeline's visual elements (line and dot)
           _buildTimelineMarker(theme, index),
           const SizedBox(width: 16),
-          // The card with the booking details
           Expanded(
             child: Card(
               elevation: 4,
@@ -117,7 +127,6 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
     );
   }
 
-  /// Creates the dot and vertical line for the timeline effect.
   Widget _buildTimelineMarker(ThemeData theme, int index) {
     return Column(
       children: [
@@ -134,14 +143,13 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
         ),
         Container(
           width: 2,
-          height: 150, // Adjust height to control spacing
+          height: 150,
           color: theme.colorScheme.primary.withOpacity(0.2),
         ),
       ],
     );
   }
 
-  /// Displays the details for a single meal (Lunch or Dinner).
   Widget _buildMealDetail(ThemeData theme, {required IconData icon, required String title, List<String>? items}) {
     bool isBooked = items != null && items.isNotEmpty;
     return Column(
@@ -174,7 +182,6 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
     );
   }
 
-  /// A centered widget to display when the list is empty or there's an error.
   Widget _buildInfoMessage({required IconData icon, required String message}) {
     return Center(
       child: Column(
