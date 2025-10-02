@@ -167,4 +167,58 @@ class AdminProvider with ChangeNotifier {
     notifyListeners();
     return false;
   }
+
+  Future<bool> updateUserRole(int userId, String newRole) async {
+    _isSubmitting = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final response = await _apiService.patch('/users/$userId', {'role': newRole});
+
+      if (response.statusCode == 200) {
+        await fetchAllUsers(forceRefresh: true);
+        _isSubmitting = false;
+        notifyListeners();
+        return true;
+      } else {
+        final responseData = json.decode(response.body);
+        _error = responseData['detail'] ?? 'Failed to update role.';
+      }
+    } catch (e) {
+      _error = 'An error occurred. Please check your connection.';
+      print(e);
+    }
+
+    _isSubmitting = false;
+    notifyListeners();
+    return false;
+  }
+
+  Future<bool> deleteUser(int userId) async {
+    _isSubmitting = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final response = await _apiService.delete('/users/$userId');
+
+      if (response.statusCode == 204) {
+        await fetchAllUsers(forceRefresh: true);
+        _isSubmitting = false;
+        notifyListeners();
+        return true;
+      } else {
+        final responseData = json.decode(response.body);
+        _error = responseData['detail'] ?? 'Failed to delete user.';
+      }
+    } catch (e) {
+      _error = 'An error occurred. Please check your connection.';
+      print(e);
+    }
+
+    _isSubmitting = false;
+    notifyListeners();
+    return false;
+  }
 }

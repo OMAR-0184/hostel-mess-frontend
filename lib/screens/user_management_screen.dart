@@ -61,26 +61,27 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   }
 
   Widget _buildUserCard(User user) {
-    // FIX: Provide a default value ('student') if the user's role is null.
-    // This creates a non-nullable variable that is safe to use below.
     final userRole = user.role ?? 'student';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12.0),
       child: ListTile(
         leading: CircleAvatar(
-          // Use the safe userRole variable.
           backgroundColor: _getRoleColor(userRole).withOpacity(0.2),
           child: Text(
             user.name.isNotEmpty ? user.name[0] : '?',
-            // Use the safe userRole variable.
             style: TextStyle(color: _getRoleColor(userRole), fontWeight: FontWeight.bold),
           ),
         ),
         title: Text(user.name, style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Text('Room: ${user.roomNumber} | ${user.email}'),
-        // Use the safe userRole variable.
-        trailing: _buildRoleChip(userRole),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildRoleChip(userRole),
+            _buildUserActionsMenu(user),
+          ],
+        ),
       ),
     );
   }
@@ -93,6 +94,121 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       ),
       backgroundColor: _getRoleColor(role),
       padding: const EdgeInsets.symmetric(horizontal: 8.0),
+    );
+  }
+
+  Widget _buildUserActionsMenu(User user) {
+    return PopupMenuButton<String>(
+      onSelected: (value) {
+        if (value == 'change_role') {
+          _showChangeRoleDialog(user);
+        } else if (value == 'delete') {
+          _showDeleteUserDialog(user);
+        }
+      },
+      itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+        const PopupMenuItem<String>(
+          value: 'change_role',
+          child: Text('Change role'),
+        ),
+        const PopupMenuItem<String>(
+          value: 'delete',
+          child: Text('Delete user'),
+        ),
+      ],
+    );
+  }
+
+  void _showChangeRoleDialog(User user) {
+    String selectedRole = user.role ?? 'student';
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Change Role for ${user.name}'),
+          content: DropdownButton<String>(
+            value: selectedRole,
+            items: <String>['student', 'convenor', 'mess_committee']
+                .map<DropdownMenuItem<String>>((String value) {
+              return DropdownMenuItem<String>(
+                value: value,
+                child: Text(value.replaceAll('_', ' ').toUpperCase()),
+              );
+            }).toList(),
+            onChanged: (String? newValue) {
+              if (newValue != null) {
+                setState(() {
+                  selectedRole = newValue;
+                });
+              }
+            },
+          ),
+          actions: [
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('Save'),
+              onPressed: () {
+                final adminProvider = Provider.of<AdminProvider>(context, listen: false);
+                adminProvider.updateUserRole(user.id, selectedRole).then((success) {
+                  if (success) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('User role updated successfully!'), backgroundColor: Colors.green),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(adminProvider.error ?? 'Failed to update user role.'), backgroundColor: Colors.red),
+                    );
+                  }
+                });
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showDeleteUserDialog(User user) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Delete User ${user.name}?'),
+          content: const Text('Are you sure you want to delete this user? This action cannot be undone.'),
+          actions: [
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+              onPressed: () {
+                final adminProvider = Provider.of<AdminProvider>(context, listen: false);
+                adminProvider.deleteUser(user.id).then((success) {
+                  if (success) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('User deleted successfully!'), backgroundColor: Colors.green),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(adminProvider.error ?? 'Failed to delete user.'), backgroundColor: Colors.red),
+                    );
+                  }
+                });
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 
