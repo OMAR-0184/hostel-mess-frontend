@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart'; // Added for better fonts
+import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'provider/admin_provider.dart';
 import 'provider/auth_provider.dart';
@@ -50,7 +51,7 @@ class MyApp extends StatelessWidget {
         home: Consumer<AuthProvider>(
           builder: (context, auth, _) {
             if (auth.isLoading) {
-              return const Scaffold(body: Center(child: CircularProgressIndicator()));
+              return Scaffold(body: Center(child: Lottie.asset('assets/loader.json')));
             }
             return auth.isAuthenticated ? const HomeScreen() : const LoginScreen();
           },

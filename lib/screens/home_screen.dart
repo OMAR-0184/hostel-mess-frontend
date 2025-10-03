@@ -108,8 +108,11 @@ class _HomeScreenState extends State<HomeScreen> {
       // --- UPDATED BODY TO PREVENT SWIPING ---
       body: PageView(
         controller: _pageController,
-        // This disables the swipe gesture between pages
-        physics: const NeverScrollableScrollPhysics(),
+        onPageChanged: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
         children: _widgetOptions,
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,

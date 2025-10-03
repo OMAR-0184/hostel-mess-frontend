@@ -77,7 +77,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     _buildTextField(_passwordController, 'Password', Icons.lock_outline, obscureText: true),
                     const SizedBox(height: 24),
                     _isLoading
-                        ? const Center(child: CircularProgressIndicator())
+                        ? Center(child: Lottie.asset('assets/loader.json', height: 60))
                         : _buildLoginButton(),
                     const SizedBox(height: 32),
                     _buildRegisterButton(),
