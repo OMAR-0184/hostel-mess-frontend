@@ -1,7 +1,7 @@
 // lib/provider/notice_provider.dart
 
 import 'dart:convert';
-import 'package:flutter/material.dart'; // CORRECTED IMPORT
+import 'package:flutter/material.dart';
 import '../api/api_service.dart';
 
 class Notice {
@@ -9,12 +9,14 @@ class Notice {
   final String title;
   final String content;
   final DateTime createdAt;
+  final String author;
 
   Notice({
     required this.id,
     required this.title,
     required this.content,
     required this.createdAt,
+    required this.author,
   });
 
   factory Notice.fromJson(Map<String, dynamic> json) {
@@ -23,6 +25,7 @@ class Notice {
       title: json['title'],
       content: json['content'],
       createdAt: DateTime.parse(json['created_at']),
+      author: json['author_name'] ?? 'Admin',
     );
   }
 }

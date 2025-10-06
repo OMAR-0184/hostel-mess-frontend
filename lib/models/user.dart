@@ -1,12 +1,13 @@
+// lib/models/user.dart
 class User {
   final int id;
   final String name;
   final String email;
   final int roomNumber;
   final DateTime createdAt;
-  // FIX: These fields are now nullable to match the backend's UserOut schema
   final String? role;
   final bool? isActive;
+  final bool? isMessActive; // ADDED
 
   User({
     required this.id,
@@ -14,9 +15,9 @@ class User {
     required this.email,
     required this.roomNumber,
     required this.createdAt,
-    // FIX: These are now optional
     this.role,
     this.isActive,
+    this.isMessActive, // ADDED
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -26,10 +27,9 @@ class User {
       email: json['email'],
       roomNumber: json['room_number'],
       createdAt: DateTime.parse(json['created_at']),
-      // FIX: Safely parse these fields only if they exist in the JSON response
       role: json['role'],
       isActive: json['is_active'],
+      isMessActive: json['is_mess_active'], // ADDED
     );
   }
 }
-

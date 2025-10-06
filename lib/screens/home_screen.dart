@@ -8,7 +8,7 @@ import '../provider/auth_provider.dart';
 // Import the screens
 import 'dashboard_screen.dart';
 import 'booking_screen.dart';
-import 'my_bookings_screen.dart';
+import 'my_bookings_screen.dart'; 
 import 'notice_screen.dart';
 import 'profile_screen.dart';
 
@@ -23,10 +23,11 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   late PageController _pageController;
 
+  // UPDATED: Replaced calendar icon with history icon for My Bookings
   final iconList = <IconData>[
     Icons.home_outlined,
     Icons.restaurant_menu_outlined,
-    Icons.history_outlined,
+    Icons.history_outlined, 
     Icons.notifications_outlined,
     Icons.person_outline,
   ];
@@ -43,12 +44,13 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  // UPDATED: Replaced MenuScreen with MyBookingsScreen
   static final List<Widget> _widgetOptions = <Widget>[
-    DashboardScreen(),
+    const DashboardScreen(),
     const BookingScreen(),
     MyBookingsScreen(),
-    NoticeScreen(),
-    ProfileScreen(),
+    const NoticeScreen(),
+    const ProfileScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -62,6 +64,30 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _showLogoutConfirmationDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Confirm Logout'),
+          content: const Text('Are you sure you want to log out?'),
+          actions: [
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(dialogContext).pop(),
+            ),
+            TextButton(
+              child: const Text('Logout', style: TextStyle(color: Colors.red)),
+              onPressed: () {
+                Provider.of<AuthProvider>(context, listen: false).logout();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -72,6 +98,7 @@ class _HomeScreenState extends State<HomeScreen> {
           return 'Dashboard';
         case 1:
           return 'Book a Meal';
+        // UPDATED: Changed title back to 'My Bookings'
         case 2:
           return 'My Bookings';
         case 3:
@@ -100,12 +127,11 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icon(Icons.logout, color: theme.colorScheme.primary),
             tooltip: 'Logout',
             onPressed: () {
-              Provider.of<AuthProvider>(context, listen: false).logout();
+              _showLogoutConfirmationDialog(context);
             },
           ),
         ],
       ),
-      // --- UPDATED BODY TO PREVENT SWIPING ---
       body: PageView(
         controller: _pageController,
         onPageChanged: (index) {

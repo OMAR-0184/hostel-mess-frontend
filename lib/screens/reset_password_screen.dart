@@ -1,39 +1,54 @@
-// lib/screens/login_screen.dart
+// lib/screens/reset_password_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import '../provider/auth_provider.dart';
-import 'forgot_password_screen.dart';
-import 'register_screen.dart';
+import 'login_screen.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+class ResetPasswordScreen extends StatefulWidget {
+  const ResetPasswordScreen({Key? key}) : super(key: key);
 
   @override
-  _LoginScreenState createState() => _LoginScreenState();
+  _ResetPasswordScreenState createState() => _ResetPasswordScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
-  final _emailController = TextEditingController();
+class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
+  final _tokenController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
 
-  void _login() async {
+  void _resetPassword() async {
     FocusManager.instance.primaryFocus?.unfocus();
     setState(() => _isLoading = true);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    bool success = await authProvider.login(
-      _emailController.text.trim(),
+    bool success = await authProvider.resetPassword(
+      _tokenController.text.trim(),
       _passwordController.text.trim(),
     );
-    if (!success && mounted) {
-      final errorMessage = authProvider.errorMessage ?? 'Login Failed! Check credentials.';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(errorMessage), backgroundColor: Colors.redAccent),
-      );
+    if (success) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Password has been reset successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+          (route) => false,
+        );
+      }
+    } else {
+      if (mounted) {
+        final errorMessage = authProvider.errorMessage ?? 'Failed to reset password.';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMessage), backgroundColor: Colors.redAccent),
+        );
+      }
     }
+
     if (mounted) {
       setState(() => _isLoading = false);
     }
@@ -43,6 +58,11 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.black),
+      ),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -61,27 +81,29 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   children: [
                     Lottie.asset(
-                      'assets/login_animation.json',
+                      'assets/reset_password.json', // Add a relevant Lottie animation
                       height: 220,
                     ),
                     const SizedBox(height: 24),
                     const Text(
-                      'Sign In',
+                      'Reset Password',
                       textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF1E232C)),
                     ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Enter the token from your email and your new password.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey),
+                    ),
                     const SizedBox(height: 32),
-                    _buildTextField(_emailController, 'Email', Icons.email_outlined, isEmail: true),
+                    _buildTextField(_tokenController, 'Token', Icons.vpn_key_outlined),
                     const SizedBox(height: 16),
-                    _buildTextField(_passwordController, 'Password', Icons.lock_outlined, obscureText: true),
-                    const SizedBox(height: 8),
-                    _buildForgotPasswordButton(),
-                    const SizedBox(height: 16),
+                    _buildTextField(_passwordController, 'New Password', Icons.lock_outline, obscureText: true),
+                    const SizedBox(height: 24),
                     _isLoading
                         ? Center(child: Lottie.asset('assets/loader.json', height: 60))
-                        : _buildLoginButton(),
-                    const SizedBox(height: 32),
-                    _buildRegisterButton(),
+                        : _buildResetButton(),
                   ],
                 ),
               ),
@@ -92,11 +114,10 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String labelText, IconData icon, {bool obscureText = false, bool isEmail = false}) {
+  Widget _buildTextField(TextEditingController controller, String labelText, IconData icon, {bool obscureText = false}) {
     return TextField(
       controller: controller,
       obscureText: obscureText,
-      keyboardType: isEmail ? TextInputType.emailAddress : TextInputType.text,
       decoration: InputDecoration(
         labelText: labelText,
         prefixIcon: Icon(icon, color: Colors.grey[600]),
@@ -113,44 +134,16 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildLoginButton() {
+  Widget _buildResetButton() {
     return ElevatedButton(
-      onPressed: _login,
+      onPressed: _resetPassword,
       style: ElevatedButton.styleFrom(
         backgroundColor: const Color(0xFF0D6EFE),
         padding: const EdgeInsets.symmetric(vertical: 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
         elevation: 0,
       ),
-      child: const Text('Login', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-    );
-  }
-
-  Widget _buildRegisterButton() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Text("Haven't any account?"),
-        TextButton(
-          onPressed: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (context) => const RegisterScreen()),
-          ),
-          child: const Text('Sign up', style: TextStyle(color: Color(0xFF0D6EFE), fontWeight: FontWeight.bold)),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildForgotPasswordButton() {
-    return Align(
-      alignment: Alignment.centerRight,
-      child: TextButton(
-        onPressed: () => Navigator.of(context).push(
-
-          MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()),
-        ),
-        child: const Text('Forgot Password?', style: TextStyle(color: Color(0xFF0D6EFE))),
-      ),
+      child: const Text('Reset Password', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
     );
   }
 }

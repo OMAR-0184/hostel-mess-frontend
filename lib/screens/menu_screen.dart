@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:lottie/lottie.dart'; // Import the lottie package
 import '../provider/menu_provider.dart';
 
 class MenuScreen extends StatefulWidget {
@@ -52,13 +53,21 @@ class _MenuScreenState extends State<MenuScreen> {
                 if (menuProvider.isLoading) {
                   return const Center(child: CircularProgressIndicator());
                 }
+                // MODIFIED: Use the new animated info message for errors
                 if (menuProvider.error != null) {
-                  return _buildInfoCard(menuProvider.error!);
+                  return _buildInfoMessage(
+                    lottieAsset: 'assets/not_found.json',
+                    message: menuProvider.error!,
+                  );
                 }
                 if (menuProvider.menu != null) {
                   return _buildMenuDisplay(menuProvider.menu!);
                 }
-                return _buildInfoCard('No menu found for this date.');
+                // MODIFIED: Use the new animated info message for when no menu is set
+                return _buildInfoMessage(
+                  lottieAsset: 'assets/no-food.json',
+                  message: 'No menu is set for this date.',
+                );
               },
             ),
           ),
@@ -148,21 +157,26 @@ class _MenuScreenState extends State<MenuScreen> {
     );
   }
 
-  Widget _buildInfoCard(String message) {
-     return Center(
-      child: Card(
-        margin: const EdgeInsets.all(32.0),
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.info_outline, size: 60, color: Colors.grey),
-              const SizedBox(height: 16),
-              Text(message, style: const TextStyle(fontSize: 18, color: Colors.black54), textAlign: TextAlign.center),
-            ],
+  // NEW: Replaced _buildInfoCard with this animated widget
+  Widget _buildInfoMessage({required String lottieAsset, required String message}) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Lottie.asset(
+            lottieAsset,
+            width: 250,
           ),
-        ),
+          const SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            child: Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 18, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
+            ),
+          ),
+        ],
       ),
     );
   }

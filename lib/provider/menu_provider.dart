@@ -1,3 +1,4 @@
+// lib/provider/menu_provider.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -32,18 +33,18 @@ class MenuProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  Future<void> fetchMenuForDate(DateTime date) async {
+  Future<void> fetchMenuForDate(DateTime date, {bool forceRefresh = false}) async {
     final dateOnly = DateTime(date.year, date.month, date.day);
-    if (_menuCache.containsKey(dateOnly)) {
+    if (_menuCache.containsKey(dateOnly) && !forceRefresh) {
       _menu = _menuCache[dateOnly];
-      _error = null; // Clear previous error
+      _error = null;
       notifyListeners();
       return;
     }
 
     _isLoading = true;
     _error = null;
-    _menu = null; // Clear previous menu
+    _menu = null;
     notifyListeners();
 
     final dateString = DateFormat('yyyy-MM-dd').format(date);
@@ -51,7 +52,7 @@ class MenuProvider with ChangeNotifier {
       final response = await _apiService.get('/menus/$dateString');
       if (response.statusCode == 200) {
         _menu = DailyMenu.fromJson(json.decode(response.body));
-        _menuCache[dateOnly] = _menu!; // Store in cache
+        _menuCache[dateOnly] = _menu!;
       } else if (response.statusCode == 404) {
         _error = 'No menu has been set for this date.';
       } else {
@@ -62,6 +63,16 @@ class MenuProvider with ChangeNotifier {
       print(e);
     }
     _isLoading = false;
+    notifyListeners();
+  }
+
+  // Helper to clear menu for a date from cache
+  void clearMenuForDate(DateTime date) {
+    final dateOnly = DateTime(date.year, date.month, date.day);
+    _menuCache.remove(dateOnly);
+    if (_menu != null && DateUtils.isSameDay(_menu!.menuDate, dateOnly)) {
+      _menu = null;
+    }
     notifyListeners();
   }
 }

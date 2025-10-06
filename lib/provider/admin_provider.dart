@@ -7,12 +7,37 @@ import '../api/api_service.dart';
 import '../models/user.dart';
 
 
+class MealListItem {
+  final String userName;
+  final int roomNumber;
+  final List<String> lunchPick;
+  final List<String> dinnerPick;
+
+  MealListItem({
+    required this.userName,
+    required this.roomNumber,
+    required this.lunchPick,
+    required this.dinnerPick,
+  });
+
+  factory MealListItem.fromJson(Map<String, dynamic> json) {
+    return MealListItem(
+      userName: json['user_name'],
+      roomNumber: json['room_number'],
+      lunchPick: List<String>.from(json['lunch_pick'] ?? []),
+      dinnerPick: List<String>.from(json['dinner_pick'] ?? []),
+    );
+  }
+}
+
+
 class MealList {
   final DateTime bookingDate;
   final int totalLunchBookings;
   final int totalDinnerBookings;
   final Map<String, dynamic> lunchItemCounts;
   final Map<String, dynamic> dinnerItemCounts;
+  final List<MealListItem> bookings;
 
   MealList({
     required this.bookingDate,
@@ -20,6 +45,7 @@ class MealList {
     required this.totalDinnerBookings,
     required this.lunchItemCounts,
     required this.dinnerItemCounts,
+    required this.bookings,
   });
 
   factory MealList.fromJson(Map<String, dynamic> json) {
@@ -29,6 +55,11 @@ class MealList {
       totalDinnerBookings: json['total_dinner_bookings'],
       lunchItemCounts: json['lunch_item_counts'],
       dinnerItemCounts: json['dinner_item_counts'],
+      bookings: json['bookings'] != null
+          ? (json['bookings'] as List)
+              .map((i) => MealListItem.fromJson(i))
+              .toList()
+          : [],
     );
   }
 }
@@ -44,7 +75,6 @@ class AdminProvider with ChangeNotifier {
 
   // Caching flags
   bool _hasFetchedUsers = false;
-  final Map<DateTime, MealList> _mealListCache = {};
 
   // Public getters to access the state
   List<User> get users => _users;
@@ -74,13 +104,6 @@ class AdminProvider with ChangeNotifier {
   }
 
   Future<void> fetchMealListForDate(DateTime date) async {
-    final dateOnly = DateTime(date.year, date.month, date.day);
-    if (_mealListCache.containsKey(dateOnly)) {
-      _mealList = _mealListCache[dateOnly];
-      notifyListeners();
-      return;
-    }
-
     _isLoading = true;
     _error = null;
     _mealList = null;
@@ -91,7 +114,6 @@ class AdminProvider with ChangeNotifier {
       final response = await _apiService.get('/meallist/$dateString');
       if (response.statusCode == 200) {
         _mealList = MealList.fromJson(json.decode(response.body));
-        _mealListCache[dateOnly] = _mealList!; // Cache the result
       } else {
         _error = "No bookings found for this date.";
       }
@@ -103,21 +125,21 @@ class AdminProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Sets the daily menu by calling POST /menus
-  Future<bool> setDailyMenu({required DateTime date, required String lunchOptions, required String dinnerOptions}) async {
+  /// Sets the daily menu by calling POST /menus/
+  Future<bool> setDailyMenu({
+    required DateTime date,
+    required List<String> lunchOptions,
+    required List<String> dinnerOptions,
+  }) async {
     _isSubmitting = true;
     _error = null;
     notifyListeners();
 
-    // Convert multiline strings to lists of strings
-    final lunchList = lunchOptions.split('\n').where((s) => s.trim().isNotEmpty).toList();
-    final dinnerList = dinnerOptions.split('\n').where((s) => s.trim().isNotEmpty).toList();
-
     try {
       final response = await _apiService.post('/menus/', {
         'menu_date': DateFormat('yyyy-MM-dd').format(date),
-        'lunch_options': lunchList,
-        'dinner_options': dinnerList,
+        'lunch_options': lunchOptions,
+        'dinner_options': dinnerOptions,
       });
 
       if (response.statusCode == 201) {
@@ -127,6 +149,34 @@ class AdminProvider with ChangeNotifier {
       } else {
         final responseData = json.decode(response.body);
         _error = responseData['detail'] ?? 'Failed to set menu.';
+      }
+    } catch (e) {
+      _error = 'An error occurred. Please check your connection.';
+      print(e);
+    }
+
+    _isSubmitting = false;
+    notifyListeners();
+    return false;
+  }
+  
+  /// Deletes the daily menu by calling DELETE /menus/{date}
+  Future<bool> deleteMenuForDate(DateTime date) async {
+    _isSubmitting = true;
+    _error = null;
+    notifyListeners();
+
+    final dateString = DateFormat('yyyy-MM-dd').format(date);
+    try {
+      final response = await _apiService.delete('/menus/$dateString');
+
+      if (response.statusCode == 204) {
+        _isSubmitting = false;
+        notifyListeners();
+        return true;
+      } else {
+        final responseData = json.decode(response.body);
+        _error = responseData['detail'] ?? 'Failed to delete menu.';
       }
     } catch (e) {
       _error = 'An error occurred. Please check your connection.';
@@ -162,7 +212,7 @@ class AdminProvider with ChangeNotifier {
       _error = 'An error occurred. Please check your connection.';
       print(e);
     }
-    
+
     _isSubmitting = false;
     notifyListeners();
     return false;
@@ -211,6 +261,34 @@ class AdminProvider with ChangeNotifier {
       } else {
         final responseData = json.decode(response.body);
         _error = responseData['detail'] ?? 'Failed to delete user.';
+      }
+    } catch (e) {
+      _error = 'An error occurred. Please check your connection.';
+      print(e);
+    }
+
+    _isSubmitting = false;
+    notifyListeners();
+    return false;
+  }
+
+  // NEW METHOD
+  Future<bool> updateUserMessStatus(int userId, bool isMessActive) async {
+    _isSubmitting = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final response = await _apiService.patch('/users/$userId/mess-status', {'is_mess_active': isMessActive});
+
+      if (response.statusCode == 200) {
+        await fetchAllUsers(forceRefresh: true);
+        _isSubmitting = false;
+        notifyListeners();
+        return true;
+      } else {
+        final responseData = json.decode(response.body);
+        _error = responseData['detail'] ?? 'Failed to update mess status.';
       }
     } catch (e) {
       _error = 'An error occurred. Please check your connection.';

@@ -1,13 +1,13 @@
 // lib/screens/dashboard_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart'; // Import the package
 import 'package:provider/provider.dart';
 import '../models/user.dart';
 import '../provider/auth_provider.dart';
 import '../provider/booking_provider.dart';
 import '../provider/notice_provider.dart';
 import 'package:intl/intl.dart';
+import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart'; // IMPORTED
 
 // Import screens for navigation
 import 'booking_screen.dart';
@@ -31,24 +31,35 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<BookingProvider>(context, listen: false).fetchTodaysBooking();
-      Provider.of<NoticeProvider>(context, listen: false).fetchNotices();
+      // Fetch initial data after the first frame is built
+      _refreshData();
     });
   }
 
+  // UPDATED: More accurate greeting logic
   String _getGreeting() {
     final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good Morning';
-    if (hour < 17) return 'Good Afternoon';
-    return 'Good Evening';
+    if (hour >= 5 && hour < 12) {
+      return 'Good Morning';
+    }
+    if (hour >= 12 && hour < 17) {
+      return 'Good Afternoon';
+    }
+    if (hour >= 17 && hour < 21) {
+      return 'Good Evening';
+    }
+    return 'Good Night';
   }
 
   Future<void> _refreshData() async {
+    // Using listen: false is important in async calls within initState or callbacks
+    final bookingProvider = Provider.of<BookingProvider>(context, listen: false);
+    final noticeProvider = Provider.of<NoticeProvider>(context, listen: false);
+    
+    // Fetch data in parallel for efficiency
     await Future.wait([
-      Provider.of<BookingProvider>(context, listen: false)
-          .fetchTodaysBooking(forceRefresh: true),
-      Provider.of<NoticeProvider>(context, listen: false)
-          .fetchNotices(forceRefresh: true),
+      bookingProvider.fetchTodaysBooking(forceRefresh: true),
+      noticeProvider.fetchNotices(forceRefresh: true),
     ]);
   }
 
@@ -61,12 +72,11 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
     return Scaffold(
       backgroundColor: theme.colorScheme.background,
       body: SafeArea(
+        // UPDATED: Replaced RefreshIndicator with LiquidPullToRefresh
         child: LiquidPullToRefresh(
           onRefresh: _refreshData,
           color: theme.colorScheme.primary,
           backgroundColor: theme.colorScheme.secondary.withOpacity(0.5),
-          height: 150,
-          animSpeedFactor: 2,
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
@@ -87,8 +97,6 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
       ),
     );
   }
-
-  // ... rest of the widgets in this file remain the same
   
   Widget _buildGreetingSection(User? user, ThemeData theme) {
     return Row(
@@ -320,3 +328,4 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
     );
   }
 }
+

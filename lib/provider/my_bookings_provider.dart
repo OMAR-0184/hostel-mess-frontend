@@ -38,18 +38,22 @@ class MyBookingsProvider with ChangeNotifier {
   String? get errorMessage => _errorMessage;
 
   Future<void> fetchBookingHistory({bool forceRefresh = false}) async {
+    // If data is already fetched and it's not a forced refresh, return immediately.
     if (_hasFetched && !forceRefresh) return;
 
     _isLoading = true;
     _errorMessage = null;
-    notifyListeners();
+    // Notify listeners only if it's the first fetch to avoid unnecessary loading indicators on refresh.
+    if (!_hasFetched) {
+      notifyListeners();
+    }
 
     try {
       final response = await _apiService.get('/bookings/me');
       if (response.statusCode == 200) {
         final List<dynamic> responseData = json.decode(response.body);
         _bookingHistory = responseData.map((data) => BookingHistoryItem.fromJson(data)).toList();
-        _hasFetched = true; // Mark as fetched
+        _hasFetched = true; // Mark as fetched successfully
       } else {
         final errorData = json.decode(response.body);
         _errorMessage = errorData['detail'] ?? 'Failed to load booking history.';

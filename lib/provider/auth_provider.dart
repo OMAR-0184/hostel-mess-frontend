@@ -1,3 +1,5 @@
+// lib/provider/auth_provider.dart
+
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -94,7 +96,44 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  Future<bool> forgotPassword(String email) async {
+    _errorMessage = null;
+    try {
+      final response = await _apiService.post('/auth/forgot-password', {'email': email});
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        final errorData = json.decode(response.body);
+        _errorMessage = errorData['detail'] ?? 'An unknown error occurred.';
+        return false;
+      }
+    } catch (e) {
+      _errorMessage = 'Failed to connect to the server.';
+      print(e);
+      return false;
+    }
+  }
 
+  Future<bool> resetPassword(String token, String newPassword) async {
+    _errorMessage = null;
+    try {
+      final response = await _apiService.post('/auth/reset-password', {
+        'token': token,
+        'new_password': newPassword,
+      });
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        final errorData = json.decode(response.body);
+        _errorMessage = errorData['detail'] ?? 'An unknown error occurred.';
+        return false;
+      }
+    } catch (e) {
+      _errorMessage = 'Failed to connect to the server.';
+      print(e);
+      return false;
+    }
+  }
 
   Future<void> logout() async {
     _token = null;

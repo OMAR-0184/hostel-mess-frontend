@@ -8,9 +8,9 @@ import 'user_management_screen.dart';
 import 'meallist_screen.dart';
 import 'admin/set_menu_screen.dart';
 import 'admin/post_notice_screen.dart';
+import 'reset_password_screen.dart'; // IMPORT the reset password screen
 
 class ProfileScreen extends StatelessWidget {
-  // Add a const constructor for StatelessWidget
   const ProfileScreen({Key? key}) : super(key: key);
 
   @override
@@ -28,8 +28,11 @@ class ProfileScreen extends StatelessWidget {
             if (user != null) ...[
               _buildUserInfoSection(theme, user),
               const SizedBox(height: 24),
-              if (user.role == 'convenor' || user.role == 'mess_committee')
+              if (user.role == 'convenor' || user.role == 'mess_committee') ...[
                 _buildAdminPanel(theme, context, user),
+                const SizedBox(height: 24),
+              ],
+              _buildAccountSettings(context, theme, user),
             ],
             const SizedBox(height: 24),
             _buildLogoutButton(context),
@@ -134,7 +137,8 @@ class ProfileScreen extends StatelessWidget {
               style: theme.textTheme.titleLarge
                   ?.copyWith(fontWeight: FontWeight.bold)),
           const Divider(height: 24),
-          if (user.role == 'convenor') ...[
+          // MODIFICATION: Show "Set Daily Menu" only for the convenor.
+          if (user.role == 'convenor')
             _buildAdminButton(
               context,
               icon: Icons.edit_calendar_outlined,
@@ -142,41 +146,117 @@ class ProfileScreen extends StatelessWidget {
               onTap: () => Navigator.push(
                   context, MaterialPageRoute(builder: (_) => SetMenuScreen())),
             ),
-            _buildAdminButton(
-              context,
-              icon: Icons.list_alt_outlined,
-              text: 'View Daily Meal List',
-              onTap: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const MealListScreen())),
-            ),
-          ],
+          
+          _buildAdminButton(
+            context,
+            icon: Icons.list_alt_outlined,
+            text: 'View Daily Meal List',
+            onTap: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const MealListScreen())),
+          ),
+           _buildAdminButton(
+            context,
+            icon: Icons.post_add_outlined,
+            text: 'Post a New Notice',
+            onTap: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => PostNoticeScreen())),
+          ),
+          
           if (user.role == 'mess_committee') ...[
             _buildAdminButton(
               context,
               icon: Icons.people_outline,
-              text: 'Manage User Roles',
+              text: 'Manage Users',
               onTap: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => UserManagementScreen())),
-            ),
-            _buildAdminButton(
-              context,
-              icon: Icons.list_alt_outlined,
-              text: 'View Daily Meal List',
-              onTap: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const MealListScreen())),
-            ),
-            _buildAdminButton(
-              context,
-              icon: Icons.post_add_outlined,
-              text: 'Post a New Notice',
-              onTap: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => PostNoticeScreen())),
+                  MaterialPageRoute(builder: (_) => const UserManagementScreen())),
             ),
           ]
         ],
       ),
     );
   }
+
+  /// Widget for Account Settings section
+  Widget _buildAccountSettings(BuildContext context, ThemeData theme, User user) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("Account Settings",
+              style: theme.textTheme.titleLarge
+                  ?.copyWith(fontWeight: FontWeight.bold)),
+          const Divider(height: 24),
+          _buildAdminButton(
+            context,
+            icon: Icons.lock_reset_outlined,
+            text: 'Reset Password',
+            onTap: () => _showResetPasswordConfirmation(context, user),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  void _showResetPasswordConfirmation(BuildContext context, User user) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Confirm Password Reset'),
+          content: const Text(
+              'A password reset token will be sent to your registered email. Do you want to continue?'),
+          actions: [
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('Confirm', style: TextStyle(color: Colors.red)),
+              onPressed: () async {
+                Navigator.of(dialogContext).pop();
+                final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                final success = await authProvider.forgotPassword(user.email);
+
+                if (!context.mounted) return;
+
+                if (success) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Password reset token sent to your email!'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                        builder: (context) => const ResetPasswordScreen()),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                          authProvider.errorMessage ?? 'Failed to send reset token.'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
 
   /// A styled button for admin actions.
   Widget _buildAdminButton(BuildContext context,
@@ -208,7 +288,8 @@ class ProfileScreen extends StatelessWidget {
       icon: const Icon(Icons.logout),
       label: const Text('Logout'),
       onPressed: () {
-        Provider.of<AuthProvider>(context, listen: false).logout();
+        // UPDATED: Calls the confirmation dialog
+        _showLogoutConfirmationDialog(context);
       },
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.red.shade50,
@@ -218,6 +299,32 @@ class ProfileScreen extends StatelessWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
         textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
       ),
+    );
+  }
+
+  /// --- NEW METHOD TO SHOW LOGOUT CONFIRMATION ---
+  void _showLogoutConfirmationDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Confirm Logout'),
+          content: const Text('Are you sure you want to log out?'),
+          actions: [
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(dialogContext).pop(),
+            ),
+            TextButton(
+              child: const Text('Logout', style: TextStyle(color: Colors.red)),
+              onPressed: () {
+                // Logout action will automatically handle navigation
+                Provider.of<AuthProvider>(context, listen: false).logout();
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 }
