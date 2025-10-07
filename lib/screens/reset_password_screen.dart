@@ -56,12 +56,13 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
+        iconTheme: IconThemeData(color: theme.colorScheme.onBackground),
       ),
       body: SafeArea(
         child: Center(
@@ -85,10 +86,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                       height: 220,
                     ),
                     const SizedBox(height: 24),
-                    const Text(
+                    Text(
                       'Reset Password',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF1E232C)),
+                      style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: theme.textTheme.bodyLarge?.color),
                     ),
                     const SizedBox(height: 16),
                     const Text(
@@ -115,6 +116,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   }
 
   Widget _buildTextField(TextEditingController controller, String labelText, IconData icon, {bool obscureText = false}) {
+    final theme = Theme.of(context);
     return TextField(
       controller: controller,
       obscureText: obscureText,
@@ -122,13 +124,15 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         labelText: labelText,
         prefixIcon: Icon(icon, color: Colors.grey[600]),
         labelStyle: const TextStyle(color: Colors.grey),
+        filled: true,
+        fillColor: theme.cardTheme.color,
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10.0),
           borderSide: BorderSide(color: Colors.grey.shade300),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10.0),
-          borderSide: const BorderSide(color: Color(0xFF0D6EFE), width: 2.0),
+          borderSide: BorderSide(color: theme.colorScheme.primary, width: 2.0),
         ),
       ),
     );
@@ -138,7 +142,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     return ElevatedButton(
       onPressed: _resetPassword,
       style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF0D6EFE),
+        backgroundColor: Theme.of(context).colorScheme.primary,
         padding: const EdgeInsets.symmetric(vertical: 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
         elevation: 0,

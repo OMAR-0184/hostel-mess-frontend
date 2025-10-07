@@ -69,9 +69,7 @@ class _BookingScreenState extends State<BookingScreen> {
     }
   }
 
-  // MODIFIED: Added confirmation logic for updates
   void _submitBooking() async {
-    // If we are editing, show a confirmation dialog first.
     if (_isEditing) {
       final bool? confirmed = await _showConfirmationDialog(
         context: context,
@@ -80,7 +78,6 @@ class _BookingScreenState extends State<BookingScreen> {
         confirmText: 'Update',
         confirmColor: Colors.blue,
       );
-      // If the user does not confirm, exit the function.
       if (confirmed != true) {
         return;
       }
@@ -107,7 +104,6 @@ class _BookingScreenState extends State<BookingScreen> {
     }
   }
 
-  // MODIFIED: Added confirmation logic for deletion
   void _deleteBooking() async {
     final bool? confirmed = await _showConfirmationDialog(
       context: context,
@@ -133,7 +129,6 @@ class _BookingScreenState extends State<BookingScreen> {
     }
   }
 
-  // NEW: Reusable confirmation dialog helper
   Future<bool?> _showConfirmationDialog({
     required BuildContext context,
     required String title,
@@ -152,7 +147,7 @@ class _BookingScreenState extends State<BookingScreen> {
             TextButton(
               child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
               onPressed: () {
-                Navigator.of(context).pop(false); // User canceled
+                Navigator.of(context).pop(false);
               },
             ),
             ElevatedButton(
@@ -162,7 +157,7 @@ class _BookingScreenState extends State<BookingScreen> {
               ),
               child: Text(confirmText),
               onPressed: () {
-                Navigator.of(context).pop(true); // User confirmed
+                Navigator.of(context).pop(true);
               },
             ),
           ],
@@ -179,7 +174,7 @@ class _BookingScreenState extends State<BookingScreen> {
     final isMessActive = authProvider.user?.isMessActive ?? false;
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Stack(
         children: [
           Column(
@@ -220,7 +215,7 @@ class _BookingScreenState extends State<BookingScreen> {
               ),
             ],
           ),
-          if (!isMessActive) _buildInactiveMessOverlay(),
+          if (!isMessActive) _buildInactiveMessOverlay(theme),
         ],
       ),
     );
@@ -235,7 +230,7 @@ class _BookingScreenState extends State<BookingScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: theme.cardTheme.color,
             borderRadius: BorderRadius.circular(15.0),
             boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
           ),
@@ -274,37 +269,38 @@ class _BookingScreenState extends State<BookingScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
       child: Column(
         children: [
-          _buildBookedInfoCard(theme, 'Lunch', Icons.wb_sunny_outlined, Colors.orange, lunchItems),
+          _buildBookedInfoCard(theme, 'Lunch', Icons.wb_sunny_outlined, lunchItems),
           const SizedBox(height: 16),
-          _buildBookedInfoCard(theme, 'Dinner', Icons.nightlight_round_outlined, Colors.indigo, dinnerItems),
+          _buildBookedInfoCard(theme, 'Dinner', Icons.nightlight_round_outlined, dinnerItems),
           const SizedBox(height: 24),
-          _buildBookedActionButtons(booking),
+          _buildBookedActionButtons(theme, booking),
         ],
       ),
     );
   }
 
-  Widget _buildBookedInfoCard(ThemeData theme, String title, IconData icon, Color color, List<String> items) {
+  Widget _buildBookedInfoCard(ThemeData theme, String title, IconData icon, List<String> items) {
+    final isDarkMode = theme.brightness == Brightness.dark;
     bool isBooked = items.isNotEmpty;
 
     LinearGradient gradient;
+    Color shadowColor;
+
     if (title == 'Lunch') {
-      gradient = const LinearGradient(
-        colors: [Color(0xFFFFB347), Color(0xFFFFCC33)],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      );
-    } else {
-      gradient = const LinearGradient(
-        colors: [Color(0xFF6A11CB), Color(0xFF2575FC)],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      );
+      gradient = isDarkMode
+          ? LinearGradient(colors: [theme.colorScheme.primary.withOpacity(0.8), theme.colorScheme.primary])
+          : const LinearGradient(colors: [Color(0xFFFFB347), Color(0xFFFFCC33)]);
+      shadowColor = isDarkMode ? theme.colorScheme.primary : Colors.orange;
+    } else { // Dinner
+      gradient = isDarkMode
+          ? LinearGradient(colors: [Colors.deepPurple.shade700, Colors.deepPurple.shade900])
+          : const LinearGradient(colors: [Color(0xFF6A11CB), Color(0xFF2575FC)]);
+      shadowColor = isDarkMode ? Colors.deepPurple : Colors.indigo;
     }
 
     return Card(
       elevation: 8.0,
-      shadowColor: color.withOpacity(0.4),
+      shadowColor: shadowColor.withOpacity(0.4),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25.0)),
       child: Container(
         decoration: BoxDecoration(
@@ -312,7 +308,7 @@ class _BookingScreenState extends State<BookingScreen> {
           gradient: gradient,
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.3),
+              color: shadowColor.withOpacity(0.3),
               blurRadius: 15,
               offset: const Offset(0, 8),
             ),
@@ -373,16 +369,19 @@ class _BookingScreenState extends State<BookingScreen> {
     );
   }
 
-  Widget _buildBookedActionButtons(BookingHistoryItem booking) {
+  Widget _buildBookedActionButtons(ThemeData theme, BookingHistoryItem booking) {
+    final isDarkMode = theme.brightness == Brightness.dark;
+    final deleteColor = isDarkMode ? Colors.red.shade300 : Colors.red;
+
     return Row(
       children: [
         Expanded(
           child: OutlinedButton.icon(
             onPressed: _deleteBooking,
-            icon: const Icon(Icons.delete_outline),
-            label: const Text('Delete'),
+            icon: Icon(Icons.delete_outline, color: deleteColor),
+            label: Text('Delete', style: TextStyle(color: deleteColor)),
             style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.red, side: const BorderSide(color: Colors.red),
+              side: BorderSide(color: deleteColor),
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30.0)),
               textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -415,11 +414,14 @@ class _BookingScreenState extends State<BookingScreen> {
   Widget _buildSelectionStateView(ThemeData theme, DailyMenu? menu, bool isMessActive) {
      if (menu == null) {
       return _buildInfoMessage(
-        lottieAsset: 'assets/no-food.json', // FIX: Corrected asset path
+        lottieAsset: 'assets/no-food.json',
         message: "No menu is set for this day."
       );
      }
     final bool isMealSelected = _selectedMeals['lunch']!.isNotEmpty || _selectedMeals['dinner']!.isNotEmpty;
+    final isDarkMode = theme.brightness == Brightness.dark;
+    final lunchIconColor = isDarkMode ? theme.colorScheme.primary : Colors.orange;
+    final dinnerIconColor = isDarkMode ? Colors.deepPurple.shade300 : Colors.indigo;
 
     return Column(
       children: [
@@ -432,9 +434,9 @@ class _BookingScreenState extends State<BookingScreen> {
                 duration: const Duration(milliseconds: 400),
                 childAnimationBuilder: (widget) => SlideAnimation(verticalOffset: 50.0, child: FadeInAnimation(child: widget)),
                 children: [
-                  _buildMealSelectionCard(theme, 'Lunch', Icons.wb_sunny_outlined, Colors.orange, menu.lunchOptions, 'lunch'),
+                  _buildMealSelectionCard(theme, 'Lunch', Icons.wb_sunny_outlined, lunchIconColor, menu.lunchOptions, 'lunch'),
                   const SizedBox(height: 20),
-                  _buildMealSelectionCard(theme, 'Dinner', Icons.nightlight_round_outlined, Colors.indigo, menu.dinnerOptions, 'dinner'),
+                  _buildMealSelectionCard(theme, 'Dinner', Icons.nightlight_round_outlined, dinnerIconColor, menu.dinnerOptions, 'dinner'),
                 ],
               ),
             ),
@@ -446,10 +448,27 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Widget _buildMealSelectionCard(ThemeData theme, String title, IconData icon, Color color, List<String> options, String mealType) {
-    return Card(
-      elevation: 4.0,
-      shadowColor: Colors.black.withOpacity(0.1),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
+    final isDarkMode = theme.brightness == Brightness.dark;
+    
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20.0),
+        color: theme.cardTheme.color,
+        gradient: isDarkMode ? LinearGradient(
+          colors: [
+            color.withOpacity(0.1),
+            theme.cardTheme.color!,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ) : null,
+         boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4))
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
@@ -459,7 +478,13 @@ class _BookingScreenState extends State<BookingScreen> {
               children: [
                 Icon(icon, color: color, size: 28),
                 const SizedBox(width: 12),
-                Text(title, style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+                Text(
+                  title,
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: isDarkMode ? color : theme.textTheme.headlineSmall?.color,
+                  ),
+                ),
               ],
             ),
             const Divider(height: 24),
@@ -512,7 +537,7 @@ class _BookingScreenState extends State<BookingScreen> {
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: isSelected ? theme.colorScheme.primary : Colors.black87,
+                color: isSelected ? theme.colorScheme.primary : theme.textTheme.bodyLarge?.color,
               ),
             ),
           ),
@@ -563,8 +588,7 @@ class _BookingScreenState extends State<BookingScreen> {
     );
   }
 
-  // --- COMMON WIDGETS ---
-  Widget _buildInactiveMessOverlay() {
+  Widget _buildInactiveMessOverlay(ThemeData theme) {
     return Container(
       color: Colors.black.withOpacity(0.5),
       child: Center(
@@ -572,7 +596,7 @@ class _BookingScreenState extends State<BookingScreen> {
           padding: const EdgeInsets.all(24),
           margin: const EdgeInsets.symmetric(horizontal: 32),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: theme.cardTheme.color,
             borderRadius: BorderRadius.circular(20),
             boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10)],
           ),
@@ -591,7 +615,6 @@ class _BookingScreenState extends State<BookingScreen> {
     );
   }
   
-  // MODIFIED: This widget now uses a Lottie animation instead of an icon.
   Widget _buildInfoMessage({required String lottieAsset, required String message}) {
     return ListView( 
       physics: const AlwaysScrollableScrollPhysics(),

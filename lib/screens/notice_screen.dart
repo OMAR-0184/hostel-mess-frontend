@@ -4,28 +4,26 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
 import 'package:provider/provider.dart';
-// CORRECTED IMPORT PATH
-import 'package:flutter_staggered_animations/flutter_staggered_animations.dart'; 
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import '../provider/auth_provider.dart';
 import '../provider/notice_provider.dart';
 
-// A predefined list of beautiful, soft colors for the notice cards.
-const List<Color> _cardColors = [
-  Color(0xFFE7F3FF), // Light Blue
-  Color(0xFFE5F8ED), // Light Green
-  Color(0xFFFFF4E5), // Light Orange
-  Color(0xFFF3E5F9), // Light Purple
-  Color(0xFFE0F7FA), // Light Cyan
+// Light theme palettes (Background and Accent)
+const List<Color> _lightCardColors = [
+  Color(0xFFE7F3FF), Color(0xFFE5F8ED), Color(0xFFFFF4E5), Color(0xFFF3E5F9), Color(0xFFE0F7FA)
+];
+const List<Color> _lightAccentColors = [
+  Color(0xFF4A90E2), Color(0xFF50E3C2), Color(0xFFF5A623), Color(0xFF9013FE), Color(0xFF00ACC1)
 ];
 
-// A corresponding list of darker accent colors.
-const List<Color> _accentColors = [
-  Color(0xFF4A90E2), // Blue
-  Color(0xFF50E3C2), // Green
-  Color(0xFFF5A623), // Orange
-  Color(0xFF9013FE), // Purple
-  Color(0xFF00ACC1), // Cyan
+// Dark theme palettes (Background and Accent)
+const List<Color> _darkCardColors = [
+  Color(0xFF2A2D3A), Color(0xFF2B3A3B), Color(0xFF39322E), Color(0xFF3A2F4B), Color(0xFF2C3E4A)
 ];
+const List<Color> _darkAccentColors = [
+  Color(0xFF8AB4F8), Color(0xFF81C995), Color(0xFFFDD663), Color(0xFFC58AF9), Color(0xFF78D9EC)
+];
+
 
 class NoticeScreen extends StatefulWidget {
   const NoticeScreen({Key? key}) : super(key: key);
@@ -38,19 +36,16 @@ class _NoticeScreenState extends State<NoticeScreen> {
   @override
   void initState() {
     super.initState();
-    // Fetch notices after the first frame is built.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<NoticeProvider>(context, listen: false).fetchNotices();
     });
   }
 
-  // Handles pull-to-refresh action.
   Future<void> _refreshNotices() async {
     await Provider.of<NoticeProvider>(context, listen: false)
         .fetchNotices(forceRefresh: true);
   }
 
-  // Shows a confirmation dialog before deleting a notice.
   void _showDeleteConfirmationDialog(Notice notice) {
     showDialog(
       context: context,
@@ -76,7 +71,6 @@ class _NoticeScreenState extends State<NoticeScreen> {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      // CORRECTED TERNARY OPERATOR WITH ':'
                       content: Text(success
                           ? 'Notice deleted successfully.'
                           : 'Failed to delete notice.'),
@@ -98,10 +92,10 @@ class _NoticeScreenState extends State<NoticeScreen> {
     final user = Provider.of<AuthProvider>(context).user;
     final bool isAdmin =
         user?.role == 'convenor' || user?.role == 'mess_committee';
+    final bool isDarkMode = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      // A lighter background makes the cards stand out.
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Consumer<NoticeProvider>(
         builder: (context, noticeProvider, child) {
           if (noticeProvider.isLoading && noticeProvider.notices.isEmpty) {
@@ -125,9 +119,12 @@ class _NoticeScreenState extends State<NoticeScreen> {
                 itemBuilder: (BuildContext context, int index) {
                   final notice = noticeProvider.notices[index];
                   // Cycle through the color palettes for each card.
-                  final cardColor = _cardColors[index % _cardColors.length];
-                  final accentColor =
-                      _accentColors[index % _accentColors.length];
+                  final cardColor = isDarkMode
+                      ? _darkCardColors[index % _darkCardColors.length]
+                      : _lightCardColors[index % _lightCardColors.length];
+                  final accentColor = isDarkMode
+                      ? _darkAccentColors[index % _darkAccentColors.length]
+                      : _lightAccentColors[index % _lightAccentColors.length];
 
                   return AnimationConfiguration.staggeredList(
                     position: index,
@@ -154,7 +151,6 @@ class _NoticeScreenState extends State<NoticeScreen> {
     );
   }
 
-  // A styled widget for displaying messages like 'No notices'.
   Widget _buildInfoMessage({required IconData icon, required String message}) {
     return Center(
       child: Column(
@@ -196,8 +192,6 @@ class NoticeCard extends StatefulWidget {
 class _NoticeCardState extends State<NoticeCard> {
   bool _isExpanded = false;
 
-  // A helper to determine if the notice content is long enough to be collapsed.
-  // This is a simple heuristic based on line breaks and character count.
   bool get isLongNotice {
     const maxCharsForShortNotice = 120;
     const maxLinesForShortNotice = 3;
@@ -209,6 +203,10 @@ class _NoticeCardState extends State<NoticeCard> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    // Define text colors based on the theme for better readability on custom backgrounds
+    final titleColor = isDarkMode ? Colors.white : Colors.black87;
+    final metadataColor = isDarkMode ? Colors.white70 : Colors.black54;
 
     return GestureDetector(
       onTap: isLongNotice ? () => setState(() => _isExpanded = !_isExpanded) : null,
@@ -232,7 +230,6 @@ class _NoticeCardState extends State<NoticeCard> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // The colorful accent bar on the left.
                 Container(
                   width: 6,
                   color: widget.accentColor,
@@ -244,11 +241,11 @@ class _NoticeCardState extends State<NoticeCard> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildCardHeader(theme),
+                        _buildCardHeader(theme, titleColor),
                         const SizedBox(height: 12),
-                        _buildMetadata(theme),
+                        _buildMetadata(theme, metadataColor),
                         const Divider(height: 24, thickness: 0.5),
-                        _buildContent(theme),
+                        _buildContent(theme, titleColor),
                         if (isLongNotice) _buildExpandToggle(theme),
                       ],
                     ),
@@ -262,7 +259,7 @@ class _NoticeCardState extends State<NoticeCard> {
     );
   }
 
-  Widget _buildCardHeader(ThemeData theme) {
+  Widget _buildCardHeader(ThemeData theme, Color titleColor) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -272,7 +269,7 @@ class _NoticeCardState extends State<NoticeCard> {
             widget.notice.title,
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: titleColor,
             ),
           ),
         ),
@@ -292,9 +289,9 @@ class _NoticeCardState extends State<NoticeCard> {
     );
   }
 
-  Widget _buildMetadata(ThemeData theme) {
+  Widget _buildMetadata(ThemeData theme, Color metadataColor) {
     final metadataStyle =
-        theme.textTheme.bodySmall?.copyWith(color: Colors.black54);
+        theme.textTheme.bodySmall?.copyWith(color: metadataColor);
     return Wrap(
       spacing: 16.0,
       runSpacing: 4.0,
@@ -302,7 +299,7 @@ class _NoticeCardState extends State<NoticeCard> {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.person_outline, size: 14, color: Colors.black54),
+            Icon(Icons.person_outline, size: 14, color: metadataColor),
             const SizedBox(width: 6),
             Text('By ${widget.notice.author}', style: metadataStyle),
           ],
@@ -311,7 +308,7 @@ class _NoticeCardState extends State<NoticeCard> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.calendar_today_outlined,
-                size: 14, color: Colors.black54),
+                size: 14, color: metadataColor),
             const SizedBox(width: 6),
             Text(
               DateFormat('d MMM, yyyy').format(widget.notice.createdAt.toLocal()),
@@ -323,11 +320,10 @@ class _NoticeCardState extends State<NoticeCard> {
     );
   }
 
-  Widget _buildContent(ThemeData theme) {
+  Widget _buildContent(ThemeData theme, Color contentColor) {
     final contentStyle =
-        theme.textTheme.bodyMedium?.copyWith(height: 1.5, color: Colors.black87);
+        theme.textTheme.bodyMedium?.copyWith(height: 1.5, color: contentColor);
     
-    // AnimatedSize provides a smooth height transition when expanding/collapsing.
     return AnimatedSize(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,

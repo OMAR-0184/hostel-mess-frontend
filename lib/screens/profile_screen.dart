@@ -4,11 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/user.dart';
 import '../provider/auth_provider.dart';
+import '../provider/theme_provider.dart';
 import 'user_management_screen.dart';
 import 'meallist_screen.dart';
 import 'admin/set_menu_screen.dart';
 import 'admin/post_notice_screen.dart';
-import 'reset_password_screen.dart'; // IMPORT the reset password screen
+import 'reset_password_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -20,7 +21,7 @@ class ProfileScreen extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
@@ -42,28 +43,61 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  /// A modernized user information header.
   Widget _buildUserInfoSection(ThemeData theme, User user) {
+    final isDarkMode = theme.brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardTheme.color,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)
+          BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4))
         ],
       ),
       child: Column(
         children: [
-          CircleAvatar(
-            radius: 45,
-            backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
-            child: Text(
-              user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
-              style: TextStyle(
+          // --- UPDATED AVATAR WIDGET ---
+          Container(
+            width: 90,
+            height: 90,
+            decoration: isDarkMode
+                ? BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [
+                        theme.colorScheme.primary,
+                        theme.colorScheme.secondary,
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: theme.colorScheme.primary.withOpacity(0.4),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      )
+                    ],
+                  )
+                : BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: theme.colorScheme.primary.withOpacity(0.1),
+                  ),
+            child: Center(
+              child: Text(
+                user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
+                style: TextStyle(
                   fontSize: 40,
                   fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.primary),
+                  color: isDarkMode
+                      ? Colors.white
+                      : theme.colorScheme.primary,
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -77,13 +111,13 @@ class ProfileScreen extends StatelessWidget {
           const Divider(height: 32),
           _buildInfoRow(theme, Icons.email_outlined, user.email),
           const SizedBox(height: 12),
-          _buildInfoRow(theme, Icons.room_outlined, 'Room No: ${user.roomNumber}'),
+          _buildInfoRow(
+              theme, Icons.room_outlined, 'Room No: ${user.roomNumber}'),
         ],
       ),
     );
   }
 
-  /// A styled chip to display the user's role.
   Widget _buildRoleChip(ThemeData theme, String role) {
     Color chipColor;
     switch (role) {
@@ -107,7 +141,6 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  /// A helper to create consistent rows for user details.
   Widget _buildInfoRow(ThemeData theme, IconData icon, String text) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -119,15 +152,17 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  /// A modernized admin panel section.
   Widget _buildAdminPanel(ThemeData theme, BuildContext context, User user) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardTheme.color,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)
+          BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4))
         ],
       ),
       child: Column(
@@ -137,7 +172,6 @@ class ProfileScreen extends StatelessWidget {
               style: theme.textTheme.titleLarge
                   ?.copyWith(fontWeight: FontWeight.bold)),
           const Divider(height: 24),
-          // MODIFICATION: Show "Set Daily Menu" only for the convenor.
           if (user.role == 'convenor')
             _buildAdminButton(
               context,
@@ -146,7 +180,6 @@ class ProfileScreen extends StatelessWidget {
               onTap: () => Navigator.push(
                   context, MaterialPageRoute(builder: (_) => SetMenuScreen())),
             ),
-          
           _buildAdminButton(
             context,
             icon: Icons.list_alt_outlined,
@@ -154,14 +187,13 @@ class ProfileScreen extends StatelessWidget {
             onTap: () => Navigator.push(context,
                 MaterialPageRoute(builder: (_) => const MealListScreen())),
           ),
-           _buildAdminButton(
+          _buildAdminButton(
             context,
             icon: Icons.post_add_outlined,
             text: 'Post a New Notice',
-            onTap: () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => PostNoticeScreen())),
+            onTap: () => Navigator.push(
+                context, MaterialPageRoute(builder: (_) => PostNoticeScreen())),
           ),
-          
           if (user.role == 'mess_committee') ...[
             _buildAdminButton(
               context,
@@ -176,15 +208,18 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  /// Widget for Account Settings section
-  Widget _buildAccountSettings(BuildContext context, ThemeData theme, User user) {
+  Widget _buildAccountSettings(
+      BuildContext context, ThemeData theme, User user) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardTheme.color,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)
+          BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4))
         ],
       ),
       child: Column(
@@ -200,11 +235,95 @@ class ProfileScreen extends StatelessWidget {
             text: 'Reset Password',
             onTap: () => _showResetPasswordConfirmation(context, user),
           ),
+          const SizedBox(height: 8),
+          _buildThemeToggle(context), // The new theme toggle
         ],
       ),
     );
   }
-  
+
+  // NEW WIDGET: The innovative and animated theme toggle switch
+  Widget _buildThemeToggle(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDarkMode = themeProvider.themeMode == ThemeMode.dark;
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.color_lens_outlined,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 16),
+              Text(
+                'Dark Mode',
+                style:
+                    theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
+          GestureDetector(
+            onTap: () => themeProvider.toggleTheme(),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 400),
+              width: 60,
+              height: 34,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                color: isDarkMode
+                    ? Colors.blueGrey.shade700
+                    : Colors.lightBlue.shade100,
+              ),
+              child: AnimatedAlign(
+                alignment:
+                    isDarkMode ? Alignment.centerRight : Alignment.centerLeft,
+                duration: const Duration(milliseconds: 400),
+                curve: Curves.fastOutSlowIn,
+                child: Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: Container(
+                    width: 26,
+                    height: 26,
+                    decoration: const BoxDecoration(
+                        shape: BoxShape.circle, color: Colors.white),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 400),
+                      transitionBuilder: (child, animation) {
+                        return RotationTransition(
+                          turns: child.key == const ValueKey('moon_icon')
+                              ? Tween<double>(begin: 0.5, end: 1)
+                                  .animate(animation)
+                              : Tween<double>(begin: 0.75, end: 1)
+                                  .animate(animation),
+                          child:
+                              FadeTransition(opacity: animation, child: child),
+                        );
+                      },
+                      child: isDarkMode
+                          ? Icon(Icons.nightlight_round,
+                              color: Colors.blueGrey.shade700,
+                              size: 18,
+                              key: const ValueKey('moon_icon'))
+                          : Icon(Icons.wb_sunny_rounded,
+                              color: Colors.orangeAccent,
+                              size: 18,
+                              key: const ValueKey('sun_icon')),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showResetPasswordConfirmation(BuildContext context, User user) {
     showDialog(
       context: context,
@@ -224,7 +343,8 @@ class ProfileScreen extends StatelessWidget {
               child: const Text('Confirm', style: TextStyle(color: Colors.red)),
               onPressed: () async {
                 Navigator.of(dialogContext).pop();
-                final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                final authProvider =
+                    Provider.of<AuthProvider>(context, listen: false);
                 final success = await authProvider.forgotPassword(user.email);
 
                 if (!context.mounted) return;
@@ -243,8 +363,8 @@ class ProfileScreen extends StatelessWidget {
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(
-                          authProvider.errorMessage ?? 'Failed to send reset token.'),
+                      content: Text(authProvider.errorMessage ??
+                          'Failed to send reset token.'),
                       backgroundColor: Colors.red,
                     ),
                   );
@@ -257,10 +377,10 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-
-  /// A styled button for admin actions.
   Widget _buildAdminButton(BuildContext context,
-      {required IconData icon, required String text, required VoidCallback onTap}) {
+      {required IconData icon,
+      required String text,
+      required VoidCallback onTap}) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -272,7 +392,9 @@ class ProfileScreen extends StatelessWidget {
             children: [
               Icon(icon, color: Theme.of(context).colorScheme.primary),
               const SizedBox(width: 16),
-              Text(text, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+              Text(text,
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w500)),
               const Spacer(),
               const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
             ],
@@ -282,13 +404,11 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  /// A styled logout button.
   Widget _buildLogoutButton(BuildContext context) {
     return ElevatedButton.icon(
       icon: const Icon(Icons.logout),
       label: const Text('Logout'),
       onPressed: () {
-        // UPDATED: Calls the confirmation dialog
         _showLogoutConfirmationDialog(context);
       },
       style: ElevatedButton.styleFrom(
@@ -296,13 +416,13 @@ class ProfileScreen extends StatelessWidget {
         foregroundColor: Colors.red.shade700,
         elevation: 0,
         padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
         textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
       ),
     );
   }
 
-  /// --- NEW METHOD TO SHOW LOGOUT CONFIRMATION ---
   void _showLogoutConfirmationDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -318,7 +438,6 @@ class ProfileScreen extends StatelessWidget {
             TextButton(
               child: const Text('Logout', style: TextStyle(color: Colors.red)),
               onPressed: () {
-                // Logout action will automatically handle navigation
                 Provider.of<AuthProvider>(context, listen: false).logout();
               },
             ),

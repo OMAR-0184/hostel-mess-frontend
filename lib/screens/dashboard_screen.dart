@@ -7,9 +7,8 @@ import '../provider/auth_provider.dart';
 import '../provider/booking_provider.dart';
 import '../provider/notice_provider.dart';
 import 'package:intl/intl.dart';
-import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart'; // IMPORTED
+import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
 
-// Import screens for navigation
 import 'booking_screen.dart';
 import 'menu_screen.dart';
 import 'my_bookings_screen.dart';
@@ -31,12 +30,10 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Fetch initial data after the first frame is built
       _refreshData();
     });
   }
 
-  // UPDATED: More accurate greeting logic
   String _getGreeting() {
     final hour = DateTime.now().hour;
     if (hour >= 5 && hour < 12) {
@@ -52,11 +49,9 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
   }
 
   Future<void> _refreshData() async {
-    // Using listen: false is important in async calls within initState or callbacks
     final bookingProvider = Provider.of<BookingProvider>(context, listen: false);
     final noticeProvider = Provider.of<NoticeProvider>(context, listen: false);
     
-    // Fetch data in parallel for efficiency
     await Future.wait([
       bookingProvider.fetchTodaysBooking(forceRefresh: true),
       noticeProvider.fetchNotices(forceRefresh: true),
@@ -70,9 +65,8 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
-        // UPDATED: Replaced RefreshIndicator with LiquidPullToRefresh
         child: LiquidPullToRefresh(
           onRefresh: _refreshData,
           color: theme.colorScheme.primary,
@@ -99,14 +93,48 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
   }
   
   Widget _buildGreetingSection(User? user, ThemeData theme) {
+    final isDarkMode = theme.brightness == Brightness.dark;
+
     return Row(
       children: [
-        CircleAvatar(
-          radius: 28,
-          backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
-          child: Text(
-            user?.name.isNotEmpty ?? false ? user!.name[0].toUpperCase() : 'U',
-            style: TextStyle(fontSize: 24, color: theme.colorScheme.primary, fontWeight: FontWeight.bold),
+        // --- UPDATED AVATAR WIDGET ---
+        Container(
+          width: 56,
+          height: 56,
+          decoration: isDarkMode
+              ? BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [
+                      theme.colorScheme.primary,
+                      theme.colorScheme.secondary,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: theme.colorScheme.primary.withOpacity(0.4),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    )
+                  ],
+                )
+              : BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: theme.colorScheme.primary.withOpacity(0.1),
+                ),
+          child: Center(
+            child: Text(
+              user?.name.isNotEmpty ?? false ? user!.name[0].toUpperCase() : 'U',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: isDarkMode
+                    ? Colors.white
+                    : theme.colorScheme.primary,
+              ),
+            ),
           ),
         ),
         const SizedBox(width: 16),
@@ -144,7 +172,7 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
     return Column(
       children: [
         Material(
-          color: Colors.white,
+          color: theme.cardTheme.color,
           borderRadius: BorderRadius.circular(20),
           elevation: 4,
           shadowColor: Colors.black.withOpacity(0.1),
@@ -166,6 +194,15 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
   }
 
   Widget _buildTodaysBookingSection(ThemeData theme) {
+    // Define theme-aware gradient colors
+    final isDarkMode = theme.brightness == Brightness.dark;
+    final lunchGradient = isDarkMode
+        ? [theme.colorScheme.primary.withOpacity(0.8), theme.colorScheme.primary]
+        : [Colors.orange.shade300, Colors.orange.shade600];
+    final dinnerGradient = isDarkMode
+    ? [Colors.deepPurple.shade700, Colors.deepPurple.shade900]
+    : [Colors.indigo.shade300, Colors.indigo.shade600];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -188,7 +225,7 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
                       theme: theme,
                       title: 'Lunch',
                       icon: Icons.wb_sunny_outlined,
-                      gradientColors: [Colors.orange.shade300, Colors.orange.shade600],
+                      gradientColors: lunchGradient,
                       bookedItems: lunchItems.map((item) => item.toString()).toList(),
                     ),
                   ),
@@ -198,7 +235,7 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
                       theme: theme,
                       title: 'Dinner',
                       icon: Icons.nightlight_round_outlined,
-                      gradientColors: [Colors.indigo.shade300, Colors.indigo.shade600],
+                      gradientColors: dinnerGradient,
                       bookedItems: dinnerItems.map((item) => item.toString()).toList(),
                     ),
                   ),
@@ -224,7 +261,7 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         gradient: isBooked ? LinearGradient(colors: gradientColors, begin: Alignment.topLeft, end: Alignment.bottomRight) : null,
-        color: isBooked ? null : Colors.white,
+        color: isBooked ? null : theme.cardTheme.color,
         border: isBooked ? null : Border.all(color: Colors.grey.shade300),
         boxShadow: isBooked
             ? [BoxShadow(color: gradientColors.last.withOpacity(0.4), blurRadius: 8, offset: const Offset(0, 4))]
@@ -235,9 +272,9 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
         children: [
           Row(
             children: [
-              Icon(icon, color: isBooked ? Colors.white : Colors.grey.shade700),
+              Icon(icon, color: isBooked ? Colors.white : theme.textTheme.bodyLarge?.color),
               const SizedBox(width: 8),
-              Text(title, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: isBooked ? Colors.white : Colors.black)),
+              Text(title, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: isBooked ? Colors.white : theme.textTheme.bodyLarge?.color)),
             ],
           ),
           const SizedBox(height: 12),
@@ -287,7 +324,7 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
   Widget _buildNoticeCard(ThemeData theme, Notice notice) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12.0),
-      elevation: 4,
+      elevation: theme.cardTheme.elevation,
       shadowColor: Colors.black.withOpacity(0.1),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       clipBehavior: Clip.antiAlias,
@@ -307,9 +344,18 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
                   children: [
                     Text(notice.title, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
-                    Text(
-                      'Posted: ${DateFormat('d MMMM, yyyy').format(notice.createdAt.toLocal())}',
-                      style: const TextStyle(fontSize: 14, color: Colors.grey),
+                    Row(
+                      children: [
+                        Text(
+                          'Posted by: ${notice.author}',
+                          style: const TextStyle(fontSize: 14, color: Colors.grey),
+                        ),
+                        const Spacer(),
+                        Text(
+                          DateFormat('d MMMM, yyyy').format(notice.createdAt.toLocal()),
+                          style: const TextStyle(fontSize: 14, color: Colors.grey),
+                        ),
+                      ],
                     ),
                     const Divider(height: 24),
                     Text(
@@ -328,4 +374,3 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
     );
   }
 }
-

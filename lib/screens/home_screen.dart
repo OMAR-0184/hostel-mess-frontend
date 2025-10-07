@@ -23,7 +23,6 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   late PageController _pageController;
 
-  // UPDATED: Replaced calendar icon with history icon for My Bookings
   final iconList = <IconData>[
     Icons.home_outlined,
     Icons.restaurant_menu_outlined,
@@ -44,7 +43,6 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  // UPDATED: Replaced MenuScreen with MyBookingsScreen
   static final List<Widget> _widgetOptions = <Widget>[
     const DashboardScreen(),
     const BookingScreen(),
@@ -98,7 +96,6 @@ class _HomeScreenState extends State<HomeScreen> {
           return 'Dashboard';
         case 1:
           return 'Book a Meal';
-        // UPDATED: Changed title back to 'My Bookings'
         case 2:
           return 'My Bookings';
         case 3:
@@ -111,20 +108,27 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: theme.colorScheme.background,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         title: Text(
           getTitle(_selectedIndex),
           style: TextStyle(
-            color: theme.colorScheme.primary,
+            color: theme.brightness == Brightness.dark 
+                ? theme.colorScheme.onBackground 
+                : theme.colorScheme.primary,
             fontWeight: FontWeight.bold,
           ),
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.logout, color: theme.colorScheme.primary),
+            icon: Icon(
+              Icons.logout,
+              color: theme.brightness == Brightness.dark 
+                  ? theme.colorScheme.onBackground 
+                  : theme.colorScheme.primary,
+            ),
             tooltip: 'Logout',
             onPressed: () {
               _showLogoutConfirmationDialog(context);
@@ -151,10 +155,12 @@ class _HomeScreenState extends State<HomeScreen> {
         rightCornerRadius: 32,
         onTap: (index) => _onItemTapped(index),
         activeColor: theme.colorScheme.primary,
-        inactiveColor: Colors.grey,
-        backgroundColor: Colors.white,
+        inactiveColor: theme.colorScheme.onSurface.withOpacity(0.6),
+        backgroundColor: theme.cardTheme.color, // Use theme-aware card color
         shadow: BoxShadow(
-          color: Colors.black.withOpacity(0.1),
+          color: theme.brightness == Brightness.dark 
+              ? Colors.black.withOpacity(0.4) 
+              : Colors.black.withOpacity(0.1),
           blurRadius: 10,
         ),
       ),

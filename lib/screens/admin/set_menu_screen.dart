@@ -112,7 +112,7 @@ class _SetMenuScreenState extends State<SetMenuScreen> {
                   Navigator.of(context).pop();
 
                   final adminProvider = Provider.of<AdminProvider>(context, listen: false);
-                  // Set an empty menu to effectively "delete" it without a DELETE request
+                  // Set an empty menu to effectively "delete" it
                   final success = await adminProvider.setDailyMenu(
                     date: _selectedDate,
                     lunchOptions: [],
@@ -207,45 +207,65 @@ class _SetMenuScreenState extends State<SetMenuScreen> {
   }
 
   Widget _buildMealSection(ThemeData theme, String title, IconData icon, Color color, List<String> items, TextEditingController controller) {
+    final isDarkMode = theme.brightness == Brightness.dark;
+
     return Card(
       elevation: 4.0,
-      shadowColor: Colors.black.withOpacity(0.05),
+      shadowColor: color.withOpacity(0.2), // Shadow color now matches the tone
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, color: color, size: 28),
-                const SizedBox(width: 12),
-                Text(title, style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
-              ],
-            ),
-            const Divider(height: 24),
-            if (items.isNotEmpty)
-              Wrap(
-                spacing: 8.0,
-                runSpacing: 4.0,
-                children: items.map((item) => Chip(
-                  label: Text(item),
-                  deleteIcon: const Icon(Icons.close, size: 18),
-                  onDeleted: () {
-                    setState(() {
-                      items.remove(item);
-                    });
-                  },
-                )).toList(),
-              )
-            else
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 20.0),
-                child: Center(child: Text("No items added yet.", style: TextStyle(fontSize: 16, color: Colors.grey))),
+      clipBehavior: Clip.antiAlias,
+      color: Colors.transparent, // Make card transparent to show container color
+      child: Container(
+        // The container now provides the tinted background color
+        decoration: BoxDecoration(
+          color: isDarkMode ? color.withOpacity(0.25) : color.withOpacity(0.1),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(icon, color: color, size: 28), // Icon color is always the main highlight color
+                  const SizedBox(width: 12),
+                  Text(
+                    title,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
-            const SizedBox(height: 20),
-            _buildAddItemField(items, controller),
-          ],
+              const Divider(height: 24),
+              if (items.isNotEmpty)
+                Wrap(
+                  spacing: 8.0,
+                  runSpacing: 4.0,
+                  children: items.map((item) {
+                    // Determine text color based on the chip's background color luminance
+                    final textColor = color.computeLuminance() > 0.5 ? Colors.black : Colors.white;
+                    return Chip(
+                      label: Text(item, style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
+                      backgroundColor: color, // Use the section's highlight color
+                      deleteIcon: Icon(Icons.close, size: 18, color: textColor),
+                      onDeleted: () {
+                        setState(() {
+                          items.remove(item);
+                        });
+                      },
+                    );
+                  }).toList(),
+                )
+              else
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20.0),
+                  child: Center(child: Text("No items added yet.", style: TextStyle(fontSize: 16, color: Colors.grey))),
+                ),
+              const SizedBox(height: 20),
+              _buildAddItemField(items, controller),
+            ],
+          ),
         ),
       ),
     );

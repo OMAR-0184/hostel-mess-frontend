@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
-import 'package:lottie/lottie.dart'; // Import the lottie package
+import 'package:lottie/lottie.dart';
 import '../provider/menu_provider.dart';
 
 class MenuScreen extends StatefulWidget {
@@ -18,13 +18,11 @@ class _MenuScreenState extends State<MenuScreen> {
   @override
   void initState() {
     super.initState();
-    // Fetch the menu for today when the screen loads.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<MenuProvider>(context, listen: false).fetchMenuForDate(_selectedDate);
     });
   }
 
-  /// Shows a date picker and fetches the menu for the selected date.
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -43,7 +41,7 @@ class _MenuScreenState extends State<MenuScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Column(
         children: [
           _buildDateSelector(),
@@ -53,7 +51,6 @@ class _MenuScreenState extends State<MenuScreen> {
                 if (menuProvider.isLoading) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                // MODIFIED: Use the new animated info message for errors
                 if (menuProvider.error != null) {
                   return _buildInfoMessage(
                     lottieAsset: 'assets/not_found.json',
@@ -63,7 +60,6 @@ class _MenuScreenState extends State<MenuScreen> {
                 if (menuProvider.menu != null) {
                   return _buildMenuDisplay(menuProvider.menu!);
                 }
-                // MODIFIED: Use the new animated info message for when no menu is set
                 return _buildInfoMessage(
                   lottieAsset: 'assets/no-food.json',
                   message: 'No menu is set for this date.',
@@ -81,7 +77,7 @@ class _MenuScreenState extends State<MenuScreen> {
       padding: const EdgeInsets.all(16.0),
       margin: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(15.0),
         boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.2), spreadRadius: 2, blurRadius: 8)],
       ),
@@ -105,6 +101,10 @@ class _MenuScreenState extends State<MenuScreen> {
   }
 
   Widget _buildMenuDisplay(DailyMenu menu) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final lunchColor = isDarkMode ? const Color(0xFF6E4A2E) : Colors.orange;
+    final dinnerColor = isDarkMode ? const Color(0xFF3C4073) : Colors.indigo;
+
     return AnimationLimiter(
       child: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -115,9 +115,9 @@ class _MenuScreenState extends State<MenuScreen> {
             child: FadeInAnimation(child: widget),
           ),
           children: [
-            _buildMealCard('Lunch', Icons.wb_sunny, Colors.orange, menu.lunchOptions),
+            _buildMealCard('Lunch', Icons.wb_sunny, lunchColor, menu.lunchOptions),
             const SizedBox(height: 16),
-            _buildMealCard('Dinner', Icons.nights_stay, Colors.indigo, menu.dinnerOptions),
+            _buildMealCard('Dinner', Icons.nights_stay, dinnerColor, menu.dinnerOptions),
           ],
         ),
       ),
@@ -157,7 +157,6 @@ class _MenuScreenState extends State<MenuScreen> {
     );
   }
 
-  // NEW: Replaced _buildInfoCard with this animated widget
   Widget _buildInfoMessage({required String lottieAsset, required String message}) {
     return Center(
       child: Column(

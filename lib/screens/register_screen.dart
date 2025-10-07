@@ -46,8 +46,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Center(
           // ADDED: SingleChildScrollView to fix the keyboard issue.
@@ -72,10 +73,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         height: 140,
                       ),
                       const SizedBox(height: 16),
-                      const Text(
+                      Text(
                         'Sign Up',
                         textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF1E232C)),
+                        style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: theme.textTheme.bodyLarge!.color),
                       ),
                       const SizedBox(height: 8),
                       const Text(
@@ -111,6 +112,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Widget _buildTextField(TextEditingController controller, String labelText, IconData icon, {bool obscureText = false, bool isEmail = false, bool isNumber = false}) {
+    final theme = Theme.of(context);
     return TextField(
       controller: controller,
       obscureText: obscureText,
@@ -119,13 +121,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
         labelText: labelText,
         prefixIcon: Icon(icon, color: Colors.grey[600]),
         labelStyle: const TextStyle(color: Colors.grey),
+        filled: true,
+        fillColor: theme.cardTheme.color,
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10.0),
           borderSide: BorderSide(color: Colors.grey.shade300),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10.0),
-          borderSide: const BorderSide(color: Color(0xFF0D6EFE), width: 2.0),
+          borderSide: BorderSide(color: theme.colorScheme.primary, width: 2.0),
         ),
       ),
     );
@@ -139,7 +143,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return ElevatedButton(
       onPressed: _register,
       style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF0D6EFE),
+        backgroundColor: Theme.of(context).colorScheme.primary,
         padding: const EdgeInsets.symmetric(vertical: 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
         elevation: 0,
@@ -155,7 +159,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         const Text("Already have an account?"),
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Sign in', style: TextStyle(color: Color(0xFF0D6EFE), fontWeight: FontWeight.bold)),
+          child: Text('Sign in', style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold)),
         ),
       ],
     );

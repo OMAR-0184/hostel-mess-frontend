@@ -44,8 +44,7 @@ flutter:
     - assets/
   
 # CORRECT: This is now a top-level key, at the root of the file.
-flutter_launcher_icons:
-  android: "launcher_icon"
-  ios: true
-  image_path: "assets/icon.png"
-  min_sdk_android: 21
+flutter_icons:
+  android: true
+  image_path: "assets/icon/app_icon.png"
+  adaptive_icon_background: "transparent"

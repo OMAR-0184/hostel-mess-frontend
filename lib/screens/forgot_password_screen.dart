@@ -1,3 +1,5 @@
+// lib/screens/forgot_password_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:lottie/lottie.dart';
@@ -56,12 +58,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
+        iconTheme: IconThemeData(color: theme.colorScheme.onBackground),
       ),
       body: SafeArea(
         child: Center(
@@ -82,6 +85,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   // NEW: Extracted the form into its own method for clarity
   Widget _buildForm() {
+    final theme = Theme.of(context);
     return AnimationLimiter(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -100,10 +104,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               height: 220,
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'Forgot Password?',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF1E232C)),
+              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: theme.textTheme.bodyLarge?.color),
             ),
             const SizedBox(height: 16),
             const Text(
@@ -151,6 +155,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   Widget _buildTextField(TextEditingController controller, String labelText, IconData icon, {bool isEmail = false}) {
+    final theme = Theme.of(context);
     return TextField(
       controller: controller,
       keyboardType: isEmail ? TextInputType.emailAddress : TextInputType.text,
@@ -158,13 +163,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         labelText: labelText,
         prefixIcon: Icon(icon, color: Colors.grey[600]),
         labelStyle: const TextStyle(color: Colors.grey),
+        filled: true,
+        fillColor: theme.cardTheme.color,
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10.0),
           borderSide: BorderSide(color: Colors.grey.shade300),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10.0),
-          borderSide: const BorderSide(color: Color(0xFF0D6EFE), width: 2.0),
+          borderSide: BorderSide(color: theme.colorScheme.primary, width: 2.0),
         ),
       ),
     );
@@ -174,7 +181,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     return ElevatedButton(
       onPressed: _sendResetLink,
       style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF0D6EFE),
+        backgroundColor: Theme.of(context).colorScheme.primary,
         padding: const EdgeInsets.symmetric(vertical: 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
         elevation: 0,

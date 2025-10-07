@@ -25,7 +25,7 @@ class Notice {
       title: json['title'],
       content: json['content'],
       createdAt: DateTime.parse(json['created_at']),
-      author: json['author_name'] ?? 'Admin',
+      author: json['name'] ?? 'Admin', // UPDATED: Changed 'author_name' to 'name' to match API
     );
   }
 }

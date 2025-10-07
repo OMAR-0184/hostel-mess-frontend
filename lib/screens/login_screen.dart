@@ -42,7 +42,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -68,7 +68,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const Text(
                       'Sign In',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF1E232C)),
+                      style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 32),
                     _buildTextField(_emailController, 'Email', Icons.email_outlined, isEmail: true),
@@ -93,6 +93,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildTextField(TextEditingController controller, String labelText, IconData icon, {bool obscureText = false, bool isEmail = false}) {
+    final theme = Theme.of(context);
     return TextField(
       controller: controller,
       obscureText: obscureText,
@@ -100,14 +101,16 @@ class _LoginScreenState extends State<LoginScreen> {
       decoration: InputDecoration(
         labelText: labelText,
         prefixIcon: Icon(icon, color: Colors.grey[600]),
-        labelStyle: const TextStyle(color: Colors.grey),
+        labelStyle: TextStyle(color: theme.textTheme.bodySmall?.color),
+        filled: true,
+        fillColor: theme.brightness == Brightness.dark ? Colors.black26 : Colors.white,
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10.0),
           borderSide: BorderSide(color: Colors.grey.shade300),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10.0),
-          borderSide: const BorderSide(color: Color(0xFF0D6EFE), width: 2.0),
+          borderSide: BorderSide(color: theme.colorScheme.primary, width: 2.0),
         ),
       ),
     );
@@ -117,12 +120,13 @@ class _LoginScreenState extends State<LoginScreen> {
     return ElevatedButton(
       onPressed: _login,
       style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF0D6EFE),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         padding: const EdgeInsets.symmetric(vertical: 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
         elevation: 0,
       ),
-      child: const Text('Login', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+      child: const Text('Login', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
     );
   }
 
@@ -135,7 +139,7 @@ class _LoginScreenState extends State<LoginScreen> {
           onPressed: () => Navigator.of(context).push(
             MaterialPageRoute(builder: (context) => const RegisterScreen()),
           ),
-          child: const Text('Sign up', style: TextStyle(color: Color(0xFF0D6EFE), fontWeight: FontWeight.bold)),
+          child: Text('Sign up', style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold)),
         ),
       ],
     );
@@ -146,10 +150,9 @@ class _LoginScreenState extends State<LoginScreen> {
       alignment: Alignment.centerRight,
       child: TextButton(
         onPressed: () => Navigator.of(context).push(
-
           MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()),
         ),
-        child: const Text('Forgot Password?', style: TextStyle(color: Color(0xFF0D6EFE))),
+        child: Text('Forgot Password?', style: TextStyle(color: Theme.of(context).colorScheme.primary)),
       ),
     );
   }

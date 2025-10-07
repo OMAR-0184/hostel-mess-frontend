@@ -5,7 +5,8 @@ import 'package:provider/provider.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import '../models/user.dart';
 import '../provider/admin_provider.dart';
-import 'package:lottie/lottie.dart'; // Make sure you have the lottie package
+import 'package:lottie/lottie.dart';
+import '../provider/auth_provider.dart';
 
 class UserManagementScreen extends StatefulWidget {
   const UserManagementScreen({Key? key}) : super(key: key);
@@ -21,14 +22,11 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   @override
   void initState() {
     super.initState();
-    // Add a listener to the search controller to filter users as the user types.
     _searchController.addListener(_filterUsers);
     
-    // Fetch user data when the screen loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final adminProvider = Provider.of<AdminProvider>(context, listen: false);
       adminProvider.fetchAllUsers().then((_) {
-        // Initially, the filtered list is the full list of users.
         if (mounted) {
            setState(() {
             _filteredUsers = adminProvider.users;
@@ -45,7 +43,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     super.dispose();
   }
 
-  // This method filters the list of users based on the search query.
   void _filterUsers() {
     final adminProvider = Provider.of<AdminProvider>(context, listen: false);
     final query = _searchController.text.toLowerCase();
@@ -66,7 +63,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 
   Future<void> _refreshUsers() async {
     await Provider.of<AdminProvider>(context, listen: false).fetchAllUsers(forceRefresh: true);
-    // After refreshing, re-apply the current filter.
     _filterUsers();
   }
 
@@ -75,16 +71,16 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('User Management'),
-        backgroundColor: Colors.grey[100],
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         foregroundColor: theme.colorScheme.primary,
       ),
       body: Column(
         children: [
-          _buildSearchBar(),
+          _buildSearchBar(theme),
           Expanded(
             child: Consumer<AdminProvider>(
               builder: (context, adminProvider, child) {
@@ -114,7 +110,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                           child: SlideAnimation(
                             verticalOffset: 50.0,
                             child: FadeInAnimation(
-                              child: _buildUserCard(context, user),
+                              child: _buildUserCard(context, user, theme),
                             ),
                           ),
                         );
@@ -130,8 +126,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     );
   }
 
-  /// The new search bar widget.
-  Widget _buildSearchBar() {
+  Widget _buildSearchBar(ThemeData theme) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 16.0),
       child: TextField(
@@ -144,26 +139,24 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             borderSide: BorderSide.none,
           ),
           filled: true,
-          fillColor: Colors.white,
+          fillColor: theme.cardTheme.color,
         ),
       ),
     );
   }
   
-  /// A more compact and visually distinct card for a user.
-  Widget _buildUserCard(BuildContext context, User user) {
-    final theme = Theme.of(context);
+  Widget _buildUserCard(BuildContext context, User user, ThemeData theme) {
     final userRole = user.role ?? 'student';
     final roleColor = _getRoleColor(userRole);
 
     return Card(
-      color: Colors.white,
+      color: theme.cardTheme.color,
       margin: const EdgeInsets.only(bottom: 12.0),
-      elevation: 1,
+      elevation: theme.cardTheme.elevation,
       shadowColor: Colors.black.withOpacity(0.1),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15.0),
-        side: BorderSide(color: Colors.black.withOpacity(0.4), width: 1.5),
+        side: BorderSide(color: theme.dividerColor, width: 1),
       ),
       child: Padding(
         padding: const EdgeInsets.all(12.0),
@@ -187,7 +180,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                     children: [
                       Text(user.name, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                       const SizedBox(height: 2),
-                      Text(user.email, style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[600]), overflow: TextOverflow.ellipsis),
+                      Text(user.email, style: theme.textTheme.bodySmall, overflow: TextOverflow.ellipsis),
                     ],
                   ),
                 ),
@@ -197,7 +190,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildInfoChip(Icons.room_outlined, 'Room: ${user.roomNumber}'),
+                _buildInfoChip(theme, Icons.room_outlined, 'Room: ${user.roomNumber}'),
                 _buildRoleChip(userRole, roleColor),
               ],
             ),
@@ -212,14 +205,28 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                     value: user.isMessActive ?? false,
                     onChanged: (bool value) async {
                       final adminProvider = Provider.of<AdminProvider>(context, listen: false);
+                      final authProvider = Provider.of<AuthProvider>(context, listen: false);
                       final success = await adminProvider.updateUserMessStatus(user.id, value);
                       if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(success ? 'Mess status updated!' : adminProvider.error ?? 'Failed to update status.'),
-                            backgroundColor: success ? Colors.green : Colors.red,
-                          ),
-                        );
+                        if (success) {
+                           ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Mess status updated successfully!'),
+                              backgroundColor: Colors.green,
+                            ),
+                           );
+                           if (user.id == authProvider.user?.id) {
+                              await authProvider.fetchCurrentUser();
+                           }
+                           _refreshUsers(); // Refresh the user list
+                        } else {
+                           ScaffoldMessenger.of(context).showSnackBar(
+                             SnackBar(
+                               content: Text(adminProvider.error ?? 'Failed to update status.'),
+                               backgroundColor: Colors.red,
+                             ),
+                           );
+                        }
                       }
                     },
                   ),
@@ -227,33 +234,31 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               ],
             ),
             const SizedBox(height: 8),
-            _buildActionButtons(context, user),
+            _buildActionButtons(context, user, theme),
           ],
         ),
       ),
     );
   }
 
-  /// A small styled chip for displaying info like room number.
-  Widget _buildInfoChip(IconData icon, String label) {
+  Widget _buildInfoChip(ThemeData theme, IconData icon, String label) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
+        color: theme.colorScheme.primary.withOpacity(0.1),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: Colors.grey.shade700),
+          Icon(icon, size: 16, color: theme.colorScheme.primary),
           const SizedBox(width: 6),
-          Text(label, style: TextStyle(color: Colors.grey.shade800, fontWeight: FontWeight.w500)),
+          Text(label, style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.w500)),
         ],
       ),
     );
   }
 
-  /// The colored chip indicating the user's role.
   Widget _buildRoleChip(String role, Color color) {
     return Chip(
       label: Text(
@@ -266,8 +271,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     );
   }
 
-  /// More compact action buttons.
-  Widget _buildActionButtons(BuildContext context, User user) {
+  Widget _buildActionButtons(BuildContext context, User user, ThemeData theme) {
     final adminProvider = context.watch<AdminProvider>();
     return Row(
       children: [
@@ -279,7 +283,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               padding: const EdgeInsets.symmetric(vertical: 8),
               textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
               foregroundColor: Theme.of(context).colorScheme.primary,
-              side: BorderSide(color: Colors.grey.shade300),
+              side: BorderSide(color: theme.dividerColor),
             ),
             onPressed: (adminProvider.isSubmitting ?? false) ? null : () => _showChangeRoleBottomSheet(context, user),
           ),
@@ -292,8 +296,8 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 8),
               textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-              foregroundColor: Colors.red.shade700,
-              side: BorderSide(color: Colors.red.shade200),
+              foregroundColor: Colors.red.shade400,
+              side: BorderSide(color: Colors.red.shade400.withOpacity(0.5)),
             ),
             onPressed: (adminProvider.isSubmitting ?? false) ? null : () => _showDeleteUserDialog(context, user),
           ),
@@ -302,7 +306,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     );
   }
 
-  /// Shows a mobile-friendly bottom sheet to select a new role.
   void _showChangeRoleBottomSheet(BuildContext context, User user) {
     String selectedRole = user.role ?? 'student';
     final roles = ['student', 'convenor', 'mess_committee'];
@@ -343,7 +346,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                       child: const Text('Save Changes'),
                       onPressed: () async {
                         final adminProvider = Provider.of<AdminProvider>(context, listen: false);
-                        Navigator.of(bottomSheetContext).pop(); // Close bottom sheet
+                        Navigator.of(bottomSheetContext).pop();
                         final success = await adminProvider.updateUserRole(user.id, selectedRole);
                         if (mounted) {
                            ScaffoldMessenger.of(context).showSnackBar(
@@ -365,7 +368,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     );
   }
 
-  /// Shows a confirmation dialog before deleting a user.
   void _showDeleteUserDialog(BuildContext context, User user) {
     showDialog(
       context: context,
@@ -382,7 +384,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               child: const Text('Delete', style: TextStyle(color: Colors.red)),
               onPressed: () async {
                 final adminProvider = Provider.of<AdminProvider>(context, listen: false);
-                Navigator.of(dialogContext).pop(); // Close dialog
+                Navigator.of(dialogContext).pop();
                 final success = await adminProvider.deleteUser(user.id);
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -400,7 +402,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     );
   }
 
-  /// Returns a specific color based on the user's role.
   Color _getRoleColor(String role) {
     switch (role) {
       case 'convenor':
@@ -413,14 +414,13 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     }
   }
 
-  /// A widget to show when the user list is empty.
   Widget _buildEmptyState() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Lottie.asset(
-            'assets/empty_list.json', // You can find animations on lottiefiles.com
+            'assets/empty_list.json',
             width: 250,
           ),
           const SizedBox(height: 20),
@@ -439,7 +439,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     );
   }
   
-  /// A styled widget for displaying messages like 'No users found'.
   Widget _buildInfoMessage({required IconData icon, required String message}) {
     return Center(
       child: Column(
@@ -457,4 +456,3 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     );
   }
 }
-
