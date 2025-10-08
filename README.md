@@ -25,16 +25,16 @@ The application is built using a modern, scalable architecture centered around t
 ## Screenshots
 
 ### SignIn Screen
-![SignIn Screen](https://github.com/user-attachments/assets/768dbe7b-61da-4d81-b7a3-627603a9bf77)
+<img src="https://github.com/user-attachments/assets/768dbe7b-61da-4d81-b7a3-627603a9bf77" width="150">
 
 ### Dashboard
-![Dashboard](https://github.com/user-attachments/assets/c5a1d9bd-a27a-4b7c-9c39-84764e6c4f56)
+<img src="https://github.com/user-attachments/assets/c5a1d9bd-a27a-4b7c-9c39-84764e6c4f56" width="150">
 
 ### Booking Screen
-![Booking Screen](https://github.com/user-attachments/assets/43049e63-9e5b-430b-b6be-5ac240cd879c)
+<img src="https://github.com/user-attachments/assets/43049e63-9e5b-430b-b6be-5ac240cd879c" width="150">
 
 ### User Management Screen
-![User Management Screen](https://github.com/user-attachments/assets/48cff7f0-163a-4933-9a50-cceae9dfe9de)
+<img src="https://github.com/user-attachments/assets/48cff7f0-163a-4933-9a50-cceae9dfe9de" width="150">
 
 ---
 
