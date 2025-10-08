@@ -79,28 +79,3 @@ To get a local copy up and running, follow these simple steps.
    flutter pub get
 4. ```bash
    flutter run
-
-#Project Structure
-lib/
-├── api/
-│   └── api_service.dart           # Handles all HTTP requests to the backend
-├── models/
-│   └── user.dart                  # Data models (e.g., User, Notice)
-├── provider/
-│   ├── auth_provider.dart         # State management for authentication
-│   ├── booking_provider.dart      # State for meal booking logic
-│   ├── menu_provider.dart         # State for fetching daily menus
-│   └── ...                        # Other providers for each feature
-├── screens/
-│   ├── admin/
-│   │   ├── post_notice_screen.dart
-│   │   └── set_menu_screen.dart
-│   ├── dashboard_screen.dart      # Main dashboard UI
-│   ├── booking_screen.dart        # Meal booking UI
-│   ├── login_screen.dart          # Login UI
-│   └── ...                        # Other app screens
-├── widgets/
-│   ├── custom_button.dart
-│   └── custom_textfield.dart      # Reusable UI components
-└── main.dart                      # App entry point and theme configuration
-
