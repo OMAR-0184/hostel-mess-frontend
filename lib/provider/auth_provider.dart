@@ -70,12 +70,11 @@ class AuthProvider with ChangeNotifier {
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
         _currentUser = User.fromJson(responseData);
-      } else {
+      } else if (response.statusCode == 401) {
         await logout();
       }
     } catch (e) {
-      print(e);
-      await logout();
+      print("Error fetching current user: $e");
     }
     notifyListeners();
   }
