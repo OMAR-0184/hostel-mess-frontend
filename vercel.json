@@ -1,5 +1,0 @@
-{
-  "buildCommand": "curl -o flutter_installer.sh https://raw.githubusercontent.com/subosito/flutter-action/main/install.sh && bash flutter_installer.sh stable && export PATH=$PATH:`pwd`/flutter/bin && flutter pub get && flutter build web --release --no-wasm-dry-run",
-  "outputDirectory": "build/web",
-  "framework": null
-}
