@@ -1,6 +1,7 @@
 // screens/home_screen.dart
 
 import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.dart';
+import 'package:flutter/cupertino.dart'; // IMPORTED for Cupertino icons
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../provider/auth_provider.dart';
@@ -23,12 +24,13 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   late PageController _pageController;
 
+  // --- UPDATED: Using modern Cupertino icons ---
   final iconList = <IconData>[
-    Icons.home_outlined,
-    Icons.restaurant_menu_outlined,
-    Icons.history_outlined, 
-    Icons.notifications_outlined,
-    Icons.person_outline,
+    CupertinoIcons.home,
+    CupertinoIcons.square_list,
+    CupertinoIcons.clock,
+    CupertinoIcons.bell,
+    CupertinoIcons.person,
   ];
 
   @override
@@ -57,8 +59,9 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     _pageController.animateToPage(
       index,
-      duration: const Duration(milliseconds: 400),
-      curve: Curves.easeOutCubic,
+      // --- UPDATED: Smoother, more modern animation curve and duration ---
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.fastOutSlowIn,
     );
   }
 
@@ -67,6 +70,8 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)),
           title: const Text('Confirm Logout'),
           content: const Text('Are you sure you want to log out?'),
           actions: [
@@ -112,22 +117,39 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
-        title: Text(
-          getTitle(_selectedIndex),
-          style: TextStyle(
-            color: theme.brightness == Brightness.dark 
-                ? theme.colorScheme.onBackground 
-                : theme.colorScheme.primary,
-            fontWeight: FontWeight.bold,
+        // --- UPDATED: AnimatedSwitcher for a cool title transition ---
+        title: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0.0, -0.5),
+                  end: const Offset(0.0, 0.0),
+                ).animate(animation),
+                child: child,
+              ),
+            );
+          },
+          child: Text(
+            getTitle(_selectedIndex),
+            key: ValueKey<int>(_selectedIndex), // Ensures the animation triggers
+            style: TextStyle(
+              color: theme.brightness == Brightness.dark 
+                  ? theme.colorScheme.onBackground 
+                  : theme.colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
         actions: [
           IconButton(
             icon: Icon(
-              Icons.logout,
+              Icons.logout, // Sticking with Material icon for logout
               color: theme.brightness == Brightness.dark 
-                  ? theme.colorScheme.onBackground 
-                  : theme.colorScheme.primary,
+                  ? theme.colorScheme.onBackground.withOpacity(0.7)
+                  : Colors.grey[700],
             ),
             tooltip: 'Logout',
             onPressed: () {
@@ -156,12 +178,14 @@ class _HomeScreenState extends State<HomeScreen> {
         onTap: (index) => _onItemTapped(index),
         activeColor: theme.colorScheme.primary,
         inactiveColor: theme.colorScheme.onSurface.withOpacity(0.6),
-        backgroundColor: theme.cardTheme.color, // Use theme-aware card color
+        backgroundColor: theme.cardTheme.color,
+        // --- UPDATED: Added splash color and modern shadow ---
+        splashColor: theme.colorScheme.primary.withOpacity(0.15),
+        splashSpeedInMilliseconds: 300,
         shadow: BoxShadow(
-          color: theme.brightness == Brightness.dark 
-              ? Colors.black.withOpacity(0.4) 
-              : Colors.black.withOpacity(0.1),
-          blurRadius: 10,
+          color: theme.shadowColor.withOpacity(0.08),
+          blurRadius: 15,
+          offset: const Offset(0, -5), // Softer shadow coming from the top
         ),
       ),
     );

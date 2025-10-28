@@ -31,10 +31,18 @@ class _MenuScreenState extends State<MenuScreen> {
       lastDate: DateTime.now().add(const Duration(days: 7)),
     );
     if (picked != null && picked != _selectedDate) {
+      // --- FIX: Call the provider *first* ---
+      // This tells the provider to clear the old menu and set isLoading = true.
+      // The Consumer widget will immediately update to show the loading spinner.
+      Provider.of<MenuProvider>(context, listen: false).fetchMenuForDate(picked);
+
+      // --- Then, call setState to update the date selector UI ---
+      // This will rebuild the screen, but the Consumer will correctly
+      // continue to show the loading spinner until the fetch is complete.
       setState(() {
         _selectedDate = picked;
       });
-      Provider.of<MenuProvider>(context, listen: false).fetchMenuForDate(picked);
+      // --- END FIX ---
     }
   }
 
@@ -79,7 +87,13 @@ class _MenuScreenState extends State<MenuScreen> {
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(15.0),
-        boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.2), spreadRadius: 2, blurRadius: 8)],
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).cardTheme.shadowColor ?? Colors.grey.withOpacity(0.2), 
+            spreadRadius: 2, 
+            blurRadius: 8
+          )
+        ],
       ),
       child: Row(
         children: [

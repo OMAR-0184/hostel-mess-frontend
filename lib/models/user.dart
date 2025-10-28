@@ -32,4 +32,28 @@ class User {
       isMessActive: json['is_mess_active'], // ADDED
     );
   }
+
+  // --- NEW METHOD ---
+  User copyWith({
+    int? id,
+    String? name,
+    String? email,
+    int? roomNumber,
+    DateTime? createdAt,
+    String? role,
+    bool? isActive,
+    bool? isMessActive,
+  }) {
+    return User(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      roomNumber: roomNumber ?? this.roomNumber,
+      createdAt: createdAt ?? this.createdAt,
+      role: role ?? this.role,
+      isActive: isActive ?? this.isActive,
+      isMessActive: isMessActive ?? this.isMessActive,
+    );
+  }
+  // --- END NEW METHOD ---
 }

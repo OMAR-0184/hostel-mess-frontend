@@ -1,5 +1,4 @@
 // lib/provider/auth_provider.dart
-
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -12,11 +11,13 @@ class AuthProvider with ChangeNotifier {
   User? _currentUser;
   bool _isLoading = true;
   String? _errorMessage;
+  bool _isUpdating = false; // ADDED for profile update loading
 
   bool get isAuthenticated => _token != null && _currentUser != null;
   User? get user => _currentUser;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+  bool get isUpdating => _isUpdating; // ADDED
 
   AuthProvider() {
     _tryAutoLogin();
@@ -79,6 +80,45 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // --- NEW METHOD ---
+  /// Updates the user's profile information.
+  Future<bool> updateProfile(String name, int roomNumber) async {
+    _isUpdating = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await _apiService.patch('/auth/me', {
+        'name': name,
+        'room_number': roomNumber,
+      });
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        // Update the local user object
+        if (_currentUser != null) {
+          _currentUser = _currentUser!.copyWith(
+            name: responseData['name'],
+            roomNumber: responseData['room_number'],
+          );
+        }
+        _isUpdating = false;
+        notifyListeners();
+        return true;
+      } else {
+        final errorData = json.decode(response.body);
+        _errorMessage = errorData['detail'] ?? 'Failed to update profile.';
+      }
+    } catch (e) {
+      _errorMessage = 'An error occurred. Please check your connection.';
+      print(e);
+    }
+
+    _isUpdating = false;
+    notifyListeners();
+    return false;
+  }
+  // --- END NEW METHOD ---
 
   Future<bool> register(String name, String email, String password, int roomNumber) async {
     try {

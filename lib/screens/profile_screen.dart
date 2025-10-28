@@ -10,6 +10,7 @@ import 'meallist_screen.dart';
 import 'admin/set_menu_screen.dart';
 import 'admin/post_notice_screen.dart';
 import 'reset_password_screen.dart';
+import 'edit_profile_screen.dart'; // IMPORTED THE NEW SCREEN
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -27,7 +28,7 @@ class ProfileScreen extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
           children: [
             if (user != null) ...[
-              _buildUserInfoSection(theme, user),
+              _buildUserInfoSection(context, theme, user), // Pass context
               const SizedBox(height: 24),
               if (user.role == 'convenor' || user.role == 'mess_committee') ...[
                 _buildAdminPanel(theme, context, user),
@@ -43,78 +44,98 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildUserInfoSection(ThemeData theme, User user) {
+  Widget _buildUserInfoSection(BuildContext context, ThemeData theme, User user) { // Added context
     final isDarkMode = theme.brightness == Brightness.dark;
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: theme.cardTheme.color,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4))
-        ],
-      ),
-      child: Column(
-        children: [
-          // --- UPDATED AVATAR WIDGET ---
-          Container(
-            width: 90,
-            height: 90,
-            decoration: isDarkMode
-                ? BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: [
-                        theme.colorScheme.primary,
-                        theme.colorScheme.secondary,
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: theme.colorScheme.primary.withOpacity(0.4),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+    // --- WRAPPED IN STACK ---
+    return Stack(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: theme.cardTheme.color,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4))
+            ],
+          ),
+          child: Column(
+            children: [
+              // --- UPDATED AVATAR WIDGET ---
+              Container(
+                width: 90,
+                height: 90,
+                decoration: isDarkMode
+                    ? BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          colors: [
+                            theme.colorScheme.primary,
+                            theme.colorScheme.secondary,
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: theme.colorScheme.primary.withOpacity(0.4),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          )
+                        ],
                       )
-                    ],
-                  )
-                : BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: theme.colorScheme.primary.withOpacity(0.1),
+                    : BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: theme.colorScheme.primary.withOpacity(0.1),
+                      ),
+                child: Center(
+                  child: Text(
+                    user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
+                    style: TextStyle(
+                      fontSize: 40,
+                      fontWeight: FontWeight.bold,
+                      color: isDarkMode
+                          ? Colors.white
+                          : theme.colorScheme.primary,
+                    ),
                   ),
-            child: Center(
-              child: Text(
-                user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
-                style: TextStyle(
-                  fontSize: 40,
-                  fontWeight: FontWeight.bold,
-                  color: isDarkMode
-                      ? Colors.white
-                      : theme.colorScheme.primary,
                 ),
               ),
-            ),
+              const SizedBox(height: 16),
+              Text(
+                user.name,
+                style:
+                    theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              _buildRoleChip(theme, user.role ?? 'student'),
+              const Divider(height: 32),
+              _buildInfoRow(theme, Icons.email_outlined, user.email),
+              const SizedBox(height: 12),
+              _buildInfoRow(
+                  theme, Icons.room_outlined, 'Room No: ${user.roomNumber}'),
+            ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            user.name,
-            style:
-                theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        // --- ADDED EDIT BUTTON ---
+        Positioned(
+          top: 8,
+          right: 8,
+          child: IconButton(
+            icon: Icon(Icons.edit_outlined, color: Colors.grey.shade600),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+              );
+            },
+            tooltip: 'Edit Profile',
           ),
-          const SizedBox(height: 8),
-          _buildRoleChip(theme, user.role ?? 'student'),
-          const Divider(height: 32),
-          _buildInfoRow(theme, Icons.email_outlined, user.email),
-          const SizedBox(height: 12),
-          _buildInfoRow(
-              theme, Icons.room_outlined, 'Room No: ${user.roomNumber}'),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

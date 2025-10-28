@@ -17,12 +17,18 @@ class UserManagementScreen extends StatefulWidget {
 
 class _UserManagementScreenState extends State<UserManagementScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _roomFilterController = TextEditingController();
+  String _selectedRole = 'All';
   List<User> _filteredUsers = [];
+  
+  final List<String> _roles = ['All', 'student', 'convenor', 'mess_committee'];
 
   @override
   void initState() {
     super.initState();
+    // Add listeners to all filter inputs
     _searchController.addListener(_filterUsers);
+    _roomFilterController.addListener(_filterUsers);
     
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final adminProvider = Provider.of<AdminProvider>(context, listen: false);
@@ -40,35 +46,56 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   void dispose() {
     _searchController.removeListener(_filterUsers);
     _searchController.dispose();
+    _roomFilterController.removeListener(_filterUsers);
+    _roomFilterController.dispose();
     super.dispose();
   }
 
   void _filterUsers() {
     final adminProvider = Provider.of<AdminProvider>(context, listen: false);
-    final query = _searchController.text.toLowerCase();
+    final nameQuery = _searchController.text.toLowerCase();
+    final roomQuery = _roomFilterController.text;
     
     setState(() {
-      if (query.isEmpty) {
-        _filteredUsers = adminProvider.users;
-      } else {
-        _filteredUsers = adminProvider.users.where((user) {
-          final nameMatches = user.name.toLowerCase().contains(query);
-          final emailMatches = user.email.toLowerCase().contains(query);
-          final roomMatches = user.roomNumber.toString().contains(query);
-          return nameMatches || emailMatches || roomMatches;
-        }).toList();
-      }
+      _filteredUsers = adminProvider.users.where((user) {
+        // 1. Name search (from search bar)
+        final nameMatches = user.name.toLowerCase().contains(nameQuery);
+
+        // 2. Room filter (from filter sheet)
+        final roomMatches = roomQuery.isEmpty
+            ? true
+            : user.roomNumber.toString().contains(roomQuery);
+
+        // 3. Role filter (from filter sheet)
+        final roleMatches = _selectedRole == 'All'
+            ? true
+            : user.role == _selectedRole;
+
+        return nameMatches && roomMatches && roleMatches;
+      }).toList();
     });
   }
 
   Future<void> _refreshUsers() async {
     await Provider.of<AdminProvider>(context, listen: false).fetchAllUsers(forceRefresh: true);
+    _filterUsers(); // Re-apply filters after refresh
+  }
+
+  void _clearFilters() {
+    _searchController.clear();
+    _roomFilterController.clear();
+    setState(() {
+      _selectedRole = 'All';
+    });
     _filterUsers();
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final adminProvider = context.watch<AdminProvider>();
+    
+    final bool filtersActive = _selectedRole != 'All' || _roomFilterController.text.isNotEmpty;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -77,10 +104,46 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         foregroundColor: theme.colorScheme.primary,
+        actions: [
+          IconButton(
+            icon: Icon(
+              filtersActive ? Icons.filter_alt : Icons.filter_alt_outlined,
+              color: filtersActive ? theme.colorScheme.primary : Colors.grey,
+            ),
+            onPressed: () => _showFilterSheet(context),
+            tooltip: 'Filter Users',
+          )
+        ],
       ),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSearchBar(theme),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18.0, 0.0, 16.0, 12.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "Showing ${_filteredUsers.length} of ${adminProvider.users.length} users",
+                  style: theme.textTheme.titleSmall?.copyWith(color: Colors.grey[700]),
+                ),
+                if (filtersActive || _searchController.text.isNotEmpty)
+                  GestureDetector(
+                    onTap: _clearFilters,
+                    child: Text(
+                      'Clear All',
+                      style: TextStyle(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          _buildActiveFilterChips(theme),
           Expanded(
             child: Consumer<AdminProvider>(
               builder: (context, adminProvider, child) {
@@ -90,10 +153,10 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                 if (adminProvider.users.isEmpty) {
                   return _buildEmptyState();
                 }
-                if (_filteredUsers.isEmpty && _searchController.text.isNotEmpty) {
+                if (_filteredUsers.isEmpty) {
                   return _buildInfoMessage(
                     icon: Icons.search_off,
-                    message: 'No users found for "${_searchController.text}".',
+                    message: 'No users found matching your criteria.',
                   );
                 }
                 return RefreshIndicator(
@@ -128,11 +191,11 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 
   Widget _buildSearchBar(ThemeData theme) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 16.0),
+      padding: const EdgeInsets.fromLTRB(16.0, 0.0, 16.0, 8.0),
       child: TextField(
         controller: _searchController,
         decoration: InputDecoration(
-          hintText: 'Search by name, email, or room...',
+          hintText: 'Search by name...',
           prefixIcon: const Icon(Icons.search),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15.0),
@@ -144,7 +207,116 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       ),
     );
   }
+
+  Widget _buildActiveFilterChips(ThemeData theme) {
+    if (_selectedRole == 'All' && _roomFilterController.text.isEmpty) {
+      return const SizedBox.shrink(); // No filters, show nothing
+    }
+    
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Wrap(
+        spacing: 8.0,
+        runSpacing: 4.0,
+        children: [
+          if (_selectedRole != 'All')
+            Chip(
+              label: Text('Role: $_selectedRole'),
+              backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+              onDeleted: () {
+                setState(() => _selectedRole = 'All');
+                _filterUsers();
+              },
+            ),
+          if (_roomFilterController.text.isNotEmpty)
+            Chip(
+              label: Text('Room: ${_roomFilterController.text}'),
+              backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+              onDeleted: () {
+                _roomFilterController.clear();
+                _filterUsers();
+              },
+            ),
+        ],
+      ),
+    );
+  }
   
+  void _showFilterSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        // Use StatefulBuilder to manage the sheet's internal state
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setSheetState) {
+            return Padding(
+              padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Filter Users', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 24),
+                  // Filter by Role
+                  DropdownButtonFormField<String>(
+                    value: _selectedRole,
+                    decoration: InputDecoration(
+                      labelText: 'Role',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      prefixIcon: const Icon(Icons.security_outlined),
+                    ),
+                    items: _roles.map((role) {
+                      return DropdownMenuItem(
+                        value: role,
+                        child: Text(role.replaceAll('_', ' ').toUpperCase()),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setSheetState(() {
+                          _selectedRole = value;
+                        });
+                        setState(() {}); // Update main screen state
+                        _filterUsers(); // Re-run filter
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  // Filter by Room Number
+                  TextField(
+                    controller: _roomFilterController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: 'Room Number',
+                      hintText: 'Enter room no...',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      prefixIcon: const Icon(Icons.room_outlined),
+                    ),
+                    onChanged: (value) {
+                      _filterUsers(); // Filter as user types
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Done'),
+                      style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   Widget _buildUserCard(BuildContext context, User user, ThemeData theme) {
     final userRole = user.role ?? 'student';
     final roleColor = _getRoleColor(userRole);
@@ -308,7 +480,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 
   void _showChangeRoleBottomSheet(BuildContext context, User user) {
     String selectedRole = user.role ?? 'student';
-    final roles = ['student', 'convenor', 'mess_committee'];
 
     showModalBottomSheet(
       context: context,
@@ -326,7 +497,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                 children: [
                   Text('Change Role for ${user.name}', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 20),
-                  ...roles.map((role) {
+                  ..._roles.where((role) => role != 'All').map((role) { // Use the same role list, skip 'All'
                     return RadioListTile<String>(
                       title: Text(role.replaceAll('_', ' ').toUpperCase()),
                       value: role,
