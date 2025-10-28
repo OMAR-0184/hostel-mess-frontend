@@ -20,7 +20,7 @@ class _PostNoticeScreenState extends State<PostNoticeScreen> {
 
   void _submitNotice() async {
     if (!_formKey.currentState!.validate()) {
-      return; // Don't submit if validation fails
+      return; 
     }
     
     FocusManager.instance.primaryFocus?.unfocus();
@@ -72,8 +72,8 @@ class _PostNoticeScreenState extends State<PostNoticeScreen> {
                 ),
                 children: [
                   Lottie.asset(
-                    'writing.json', // Using this as a placeholder, replace if you have a 'notice' one
-                    height: 108, // UPDATED: Was 180, now 40% smaller
+                    'assets/writing.json', 
+                    height: 108, 
                   ),
                   const SizedBox(height: 24),
                   Text(

@@ -106,9 +106,6 @@ class MyApp extends StatelessWidget {
                 }
                 
                 if (auth.isAuthenticated) {
-                  // --- THIS IS THE FIX ---
-                  // Only create and initialize the notification service
-                  // if we are NOT on the web.
                   if (!kIsWeb) {
                     NotificationService().initialize(context);
                   }
