@@ -1,6 +1,6 @@
 // lib/main.dart
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart'; 
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
@@ -13,28 +13,29 @@ import 'provider/notice_provider.dart';
 import 'provider/theme_provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
+import 'package:flutter/foundation.dart' show kIsWeb; 
+import 'package:firebase_core/firebase_core.dart';
+import 'services/notification_service.dart'; 
 
-// A helper class to hold theme data
+
 class AppThemes {
-  // --- REVERTED LIGHT THEME ---
   static final lightTheme = ThemeData(
     brightness: Brightness.light,
     scaffoldBackgroundColor: const Color(0xFFF7F8FC),
     colorScheme: ColorScheme.fromSeed(
       seedColor: const Color(0xFF3D5AFE),
-      primary: const Color(0xFF3D5AFE),   // Restored explicit primary
-      secondary: const Color(0xFF18FFFF), // Restored explicit secondary
+      primary: const Color(0xFF3D5AFE),   
+      secondary: const Color(0xFF18FFFF), 
       background: const Color(0xFFF7F8FC),
       brightness: Brightness.light,
     ),
     cardTheme: const CardThemeData(
       color: Colors.white,
-      elevation: 2, // Restored original elevation
+      elevation: 2, 
     ),
     textTheme: GoogleFonts.poppinsTextTheme(ThemeData.light().textTheme),
     useMaterial3: true,
   );
-  // --- END OF UPDATE ---
 
   static final darkTheme = ThemeData(
     brightness: Brightness.dark,
@@ -63,7 +64,16 @@ class AppThemes {
   );
 }
 
-void main() {
+
+void main() async {
+  // Ensure Flutter is initialized
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // This will initialize Firebase on mobile but skip it on web.
+  if (!kIsWeb) {
+    await Firebase.initializeApp();
+  }
+  
   runApp(const MyApp());
 }
 
@@ -94,7 +104,18 @@ class MyApp extends StatelessWidget {
                 if (auth.isLoading) {
                   return Scaffold(body: Center(child: Lottie.asset('assets/loader.json')));
                 }
-                return auth.isAuthenticated ? const HomeScreen() : const LoginScreen();
+                
+                if (auth.isAuthenticated) {
+                  // --- THIS IS THE FIX ---
+                  // Only create and initialize the notification service
+                  // if we are NOT on the web.
+                  if (!kIsWeb) {
+                    NotificationService().initialize(context);
+                  }
+                  return const HomeScreen();
+                }
+                
+                return const LoginScreen();
               },
             ),
           );

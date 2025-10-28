@@ -1,6 +1,6 @@
 // lib/provider/auth_provider.dart
 import 'dart:convert';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart'; // FIX: Removed 'package.dart'
 import 'package:shared_preferences/shared_preferences.dart';
 import '../api/api_service.dart';
 import '../models/user.dart';
@@ -79,6 +79,27 @@ class AuthProvider with ChangeNotifier {
     }
     notifyListeners();
   }
+
+  // --- NEW METHOD ---
+  /// Sends the FCM push token to the backend server.
+  Future<void> sendPushToken(String token) async {
+    if (!isAuthenticated) return; // Don't send if not logged in
+
+    try {
+      final response = await _apiService.post('/notifications/token', {
+        'token': token,
+      });
+
+      if (response.statusCode == 204) {
+        print("Successfully registered push token.");
+      } else {
+        print("Failed to register push token. Status: ${response.statusCode}");
+      }
+    } catch (e) {
+      print("Error sending push token to server: $e");
+    }
+  }
+  // --- END NEW METHOD ---
 
   // --- NEW METHOD ---
   /// Updates the user's profile information.
