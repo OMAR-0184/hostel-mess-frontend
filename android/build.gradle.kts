@@ -1,12 +1,16 @@
-plugins {
-    // --- ADD THIS LINE ---
-    id("com.google.gms.google-services") version "4.4.1" apply false
-}
-
 allprojects {
     repositories {
         google()
         mavenCentral()
+    }
+    project.afterEvaluate {
+         if (project.plugins.hasPlugin("com.android.application") || project.plugins.hasPlugin("com.android.library")) {
+            val android = project.extensions.getByName("android") as com.android.build.gradle.BaseExtension
+            android.compileSdkVersion = "android-36" 
+            android.defaultConfig {
+                targetSdk = 36 
+            }
+        }
     }
 }
 

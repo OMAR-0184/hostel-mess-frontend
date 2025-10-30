@@ -21,6 +21,11 @@ dependencies:
   url_launcher: ^6.2.6
   path_provider: ^2.1.3
 
+  pdf: ^3.10.8         # Core PDF generation library
+  printing: ^5.12.0    # For saving, sharing, and font loading
+  fl_chart: ^0.68.0    # For creating beautiful charts
+  open_filex: ^4.4.0   # To open the generated file
+
   firebase_core: ^2.31.0  # Use a recent version
   firebase_messaging: ^14.9.2
   
