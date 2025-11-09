@@ -1,6 +1,6 @@
 // lib/provider/auth_provider.dart
 import 'dart:convert';
-import 'package:flutter/material.dart'; // FIX: Removed 'package.dart'
+import 'package:flutter/material.dart'; 
 import 'package:shared_preferences/shared_preferences.dart';
 import '../api/api_service.dart';
 import '../models/user.dart';
@@ -17,7 +17,7 @@ class AuthProvider with ChangeNotifier {
   User? get user => _currentUser;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
-  bool get isUpdating => _isUpdating; // ADDED
+  bool get isUpdating => _isUpdating; 
 
   AuthProvider() {
     _tryAutoLogin();
@@ -80,7 +80,6 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // --- NEW METHOD ---
   /// Sends the FCM push token to the backend server.
   Future<void> sendPushToken(String token) async {
     if (!isAuthenticated) return; // Don't send if not logged in
@@ -99,9 +98,7 @@ class AuthProvider with ChangeNotifier {
       print("Error sending push token to server: $e");
     }
   }
-  // --- END NEW METHOD ---
 
-  // --- NEW METHOD ---
   /// Updates the user's profile information.
   Future<bool> updateProfile(String name, int roomNumber) async {
     _isUpdating = true;
@@ -139,7 +136,7 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
     return false;
   }
-  // --- END NEW METHOD ---
+
 
   Future<bool> register(String name, String email, String password, int roomNumber) async {
     try {

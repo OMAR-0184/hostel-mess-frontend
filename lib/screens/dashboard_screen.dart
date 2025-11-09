@@ -251,6 +251,7 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
   Widget _buildMealCard({
     required ThemeData theme,
     required String title,
+    String? timing, // --- ADDED TIMING PARAM ---
     required IconData icon,
     required List<Color> gradientColors,
     required List<String> bookedItems,
@@ -277,6 +278,18 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
               Text(title, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: isBooked ? Colors.white : theme.textTheme.bodyLarge?.color)),
             ],
           ),
+          // --- ADDED TIMING WIDGET ---
+          if (timing != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              timing,
+              style: TextStyle(
+                color: isBooked ? Colors.white70 : Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+                fontSize: 14,
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
           Text(isBooked ? 'Booked' : 'Not Booked', style: TextStyle(color: isBooked ? Colors.white70 : Colors.grey, fontWeight: FontWeight.w500)),
           const SizedBox(height: 8),
