@@ -14,10 +14,9 @@ class ApiService {
 
    Future<Map<String, String>> _getHeaders({String? temporaryToken}) async {
     final storedToken = await _getToken();
-    final token = temporaryToken ?? storedToken; // Use the temporary token if it exists
+    final token = temporaryToken ?? storedToken; 
 
     return {
-      // FIX: Corrected the typo from 'UTF--8' to 'UTF-8'
       'Content-Type': 'application/json; charset=UTF-8',
       if (token != null) 'Authorization': 'Bearer $token',
     };

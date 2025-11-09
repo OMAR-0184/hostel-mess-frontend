@@ -17,7 +17,6 @@ class ForgotPasswordScreen extends StatefulWidget {
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _emailController = TextEditingController();
   bool _isLoading = false;
-  // NEW: State to control the success animation
   bool _showSuccessAnimation = false;
 
   void _sendResetLink() async {

@@ -2,7 +2,7 @@
 
 import 'dart:async';
 import 'dart:typed_data';
-import 'package:flutter/services.dart';
+import 'package:flutter/services.dart'; // <-- THIS IS THE FIX (was 'package://')
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -16,10 +16,10 @@ class PdfExportService {
   static const PdfColor lightGrey = PdfColors.grey200;
   static const PdfColor darkGrey = PdfColors.grey700;
 
+  // --- MODIFIED FUNCTION SIGNATURE ---
+  // Removed lunchChartImage and dinnerChartImage parameters
   static Future<Uint8List> generateMealListPdf(
     MealList mealList,
-    Uint8List lunchChartImage, // This will be a real image
-    Uint8List dinnerChartImage, // This will be a real image
   ) async {
     final doc = pw.Document();
     final poppinsFont = await PdfGoogleFonts.poppinsRegular();
@@ -30,9 +30,7 @@ class PdfExportService {
       bold: poppinsBold,
     );
     
-    // Re-added creation of chart images
-    final lunchImg = pw.MemoryImage(lunchChartImage);
-    final dinnerImg = pw.MemoryImage(dinnerChartImage);
+    // --- REMOVED chart image creation ---
 
     doc.addPage(
       pw.MultiPage(
@@ -52,9 +50,7 @@ class PdfExportService {
           _buildSummary(mealList, poppinsBold, poppinsFont),
           pw.SizedBox(height: 20),
           
-          // 3. Charts (Re-added)
-          _buildCharts(lunchImg, dinnerImg, poppinsBold),
-          pw.SizedBox(height: 20),
+          // 3. --- REMOVED CHARTS ---
 
           // 4. Item Counts Table
           _buildItemCountsTable(mealList, poppinsBold, poppinsFont),
@@ -147,40 +143,7 @@ class PdfExportService {
     );
   }
 
-  // Re-added this widget
-  static pw.Widget _buildCharts(
-      pw.MemoryImage lunchImg, pw.MemoryImage dinnerImg, pw.Font boldFont) {
-    return pw.Column(
-      children: [
-        pw.Text('Meal Breakdowns (Visual)',
-            style: pw.TextStyle(font: boldFont, fontSize: 14, color: primaryColor)),
-        pw.Divider(color: lightGrey),
-        pw.SizedBox(height: 10),
-        pw.Row(
-          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-          children: [
-            pw.Expanded(
-              child: pw.Column(children: [
-                pw.Text('Lunch',
-                    style: pw.TextStyle(font: boldFont, fontSize: 12)),
-                pw.SizedBox(height: 10),
-                pw.Image(lunchImg, height: 200),
-              ]),
-            ),
-            pw.SizedBox(width: 20),
-            pw.Expanded(
-              child: pw.Column(children: [
-                pw.Text('Dinner',
-                    style: pw.TextStyle(font: boldFont, fontSize: 12)),
-                pw.SizedBox(height: 10),
-                pw.Image(dinnerImg, height: 200),
-              ]),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
+  // --- DELETED _buildCharts widget ---
 
   static pw.Widget _buildItemCountsTable(
       MealList mealList, pw.Font boldFont, pw.Font regularFont) {
@@ -278,3 +241,5 @@ class PdfExportService {
       ),
     );
   }
+
+}

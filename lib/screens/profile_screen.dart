@@ -34,6 +34,9 @@ class ProfileScreen extends StatelessWidget {
                 _buildAdminPanel(theme, context, user),
                 const SizedBox(height: 24),
               ],
+              // --- ADDED MEALS SECTION FOR ALL USERS ---
+              _buildMealsSection(context, theme),
+              const SizedBox(height: 24),
               _buildAccountSettings(context, theme, user),
             ],
             const SizedBox(height: 24),
@@ -194,21 +197,22 @@ class ProfileScreen extends StatelessWidget {
                   ?.copyWith(fontWeight: FontWeight.bold)),
           const Divider(height: 24),
           if (user.role == 'convenor')
-            _buildAdminButton(
+            _buildProfileButton(
               context,
               icon: Icons.edit_calendar_outlined,
               text: 'Set Daily Menu',
               onTap: () => Navigator.push(
                   context, MaterialPageRoute(builder: (_) => SetMenuScreen())),
             ),
-          _buildAdminButton(
-            context,
-            icon: Icons.list_alt_outlined,
-            text: 'View Daily Meal List',
-            onTap: () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const MealListScreen())),
-          ),
-          _buildAdminButton(
+          // --- MOVED TO _buildMealsSection ---
+          // _buildProfileButton(
+          //   context,
+          //   icon: Icons.list_alt_outlined,
+          //   text: 'View Daily Meal List',
+          //   onTap: () => Navigator.push(context,
+          //       MaterialPageRoute(builder: (_) => const MealListScreen())),
+          // ),
+          _buildProfileButton(
             context,
             icon: Icons.post_add_outlined,
             text: 'Post a New Notice',
@@ -216,7 +220,7 @@ class ProfileScreen extends StatelessWidget {
                 context, MaterialPageRoute(builder: (_) => PostNoticeScreen())),
           ),
           if (user.role == 'mess_committee') ...[
-            _buildAdminButton(
+            _buildProfileButton(
               context,
               icon: Icons.people_outline,
               text: 'Manage Users',
@@ -224,6 +228,65 @@ class ProfileScreen extends StatelessWidget {
                   MaterialPageRoute(builder: (_) => const UserManagementScreen())),
             ),
           ]
+        ],
+      ),
+    );
+  }
+
+  // --- NEW MEALS SECTION ---
+  Widget _buildMealsSection(BuildContext context, ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4))
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("Meals",
+              style: theme.textTheme.titleLarge
+                  ?.copyWith(fontWeight: FontWeight.bold)),
+          const Divider(height: 24),
+          _buildProfileButton(
+            context,
+            icon: Icons.list_alt_outlined,
+            text: 'View Daily Meal List',
+            onTap: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const MealListScreen())),
+          ),
+          _buildProfileButton(
+            context,
+            icon: Icons.star_border_outlined,
+            text: 'Rate Your Meal',
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Coming Soon!'),
+                  backgroundColor: Colors.blue,
+                ),
+              );
+            },
+          ),
+          _buildProfileButton(
+            context,
+            icon: Icons.stars_outlined,
+            text: 'My Ratings',
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Coming Soon!'),
+                  backgroundColor: Colors.blue,
+                ),
+              );
+            },
+          ),
         ],
       ),
     );
@@ -250,7 +313,7 @@ class ProfileScreen extends StatelessWidget {
               style: theme.textTheme.titleLarge
                   ?.copyWith(fontWeight: FontWeight.bold)),
           const Divider(height: 24),
-          _buildAdminButton(
+          _buildProfileButton(
             context,
             icon: Icons.lock_reset_outlined,
             text: 'Reset Password',
@@ -398,7 +461,8 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildAdminButton(BuildContext context,
+  // --- RENAMED from _buildAdminButton ---
+  Widget _buildProfileButton(BuildContext context,
       {required IconData icon,
       required String text,
       required VoidCallback onTap}) {
