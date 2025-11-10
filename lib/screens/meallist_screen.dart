@@ -1,21 +1,20 @@
 // lib/screens/meallist_screen.dart
 
 import 'dart:typed_data';
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:fl_chart/fl_chart.dart'; // Still needed for colors
+import 'package:fl_chart/fl_chart.dart';
 import 'package:open_filex/open_filex.dart';
 import '../provider/admin_provider.dart';
-import '../services/pdf_export_service.dart'; 
+import '../services/pdf_export_service.dart';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:printing/printing.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 
+// MealListScreen StatefulWidget
 class MealListScreen extends StatefulWidget {
   const MealListScreen({Key? key}) : super(key: key);
 
@@ -23,13 +22,10 @@ class MealListScreen extends StatefulWidget {
   _MealListScreenState createState() => _MealListScreenState();
 }
 
+// _MealListScreenState
 class _MealListScreenState extends State<MealListScreen> {
   DateTime _selectedDate = DateTime.now();
   bool _isGeneratingPdf = false;
-
-  // --- REMOVED GlobalKeys ---
-  // final GlobalKey _lunchChartKey = GlobalKey();
-  // final GlobalKey _dinnerChartKey = GlobalKey();
 
   final List<Color> _chartColors = [
     Colors.blue,
@@ -51,6 +47,7 @@ class _MealListScreenState extends State<MealListScreen> {
     });
   }
 
+  // Date selection logic
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -67,8 +64,7 @@ class _MealListScreenState extends State<MealListScreen> {
     }
   }
 
-  // --- REMOVED _captureWidget function ---
-
+  // PDF download logic
   Future<void> _downloadPdf() async {
     final adminProvider = Provider.of<AdminProvider>(context, listen: false);
     if (adminProvider.mealList == null) {
@@ -81,24 +77,19 @@ class _MealListScreenState extends State<MealListScreen> {
     setState(() => _isGeneratingPdf = true);
 
     try {
-      // --- REMOVED chart capturing logic ---
-
-      // --- MODIFIED CALL (This is the FIX) ---
-      // Now only passes the mealList, matching the PDF service
       final Uint8List pdfBytes = await PdfExportService.generateMealListPdf(
         adminProvider.mealList!,
       );
-      // --- END OF FIX ---
 
       final dateString =
           DateFormat('yyyy-MM-dd').format(adminProvider.mealList!.bookingDate);
       final pdfName = 'MealList_$dateString.pdf';
 
       if (kIsWeb) {
-        // WEB
+        // Web PDF sharing
         await Printing.sharePdf(bytes: pdfBytes, filename: pdfName);
       } else {
-        // MOBILE
+        // Mobile PDF saving and opening
         final output = await getTemporaryDirectory();
         final file = File("${output.path}/$pdfName");
         await file.writeAsBytes(pdfBytes);
@@ -119,17 +110,21 @@ class _MealListScreenState extends State<MealListScreen> {
     setState(() => _isGeneratingPdf = false);
   }
 
+  // Main build method
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
     return Scaffold(
       backgroundColor: theme.colorScheme.background,
+      // Screen AppBar
       appBar: AppBar(
         title: const Text('Daily Meal List'),
         backgroundColor: theme.colorScheme.background,
         elevation: 0,
         foregroundColor: theme.colorScheme.primary,
         actions: [
+          // PDF Download Button Consumer
           Consumer<AdminProvider>(
             builder: (context, adminProvider, child) {
               if (adminProvider.mealList == null || adminProvider.isLoading) {
@@ -153,10 +148,14 @@ class _MealListScreenState extends State<MealListScreen> {
           ),
         ],
       ),
+      // Main Body
       body: Column(
         children: [
+          // Date Selector Widget
           _buildDateSelector(),
+          // Content Area
           Expanded(
+            // AdminProvider Consumer
             child: Consumer<AdminProvider>(
               builder: (context, adminProvider, child) {
                 if (adminProvider.isLoading) {
@@ -170,25 +169,27 @@ class _MealListScreenState extends State<MealListScreen> {
                       child: Text('No meal data found for this date.'));
                 }
                 final mealList = adminProvider.mealList!;
+                // Main List of Cards
                 return ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  padding: const EdgeInsets.fromLTRB(12.0, 0, 12.0, 80.0),
                   children: [
                     _buildSummaryCard(mealList),
-                    // --- MODIFIED CALLS (no keys) ---
                     _buildItemChart(
+                      theme,
                       "Lunch Breakdown",
                       Icons.wb_sunny,
                       Colors.orange,
                       mealList.lunchItemCounts,
                     ),
                     _buildItemChart(
+                      theme,
                       "Dinner Breakdown",
                       Icons.nights_stay,
                       Colors.indigo,
                       mealList.dinnerItemCounts,
                     ),
-                    _buildBookingsListCard("Student Bookings", Icons.person,
-                        Colors.teal, mealList.bookings),
+                    _buildBookingsListCard(theme, "Student Bookings",
+                        Icons.person, Colors.teal, mealList.bookings),
                   ],
                 );
               },
@@ -199,14 +200,15 @@ class _MealListScreenState extends State<MealListScreen> {
     );
   }
 
+  // Date Selector Card Widget
   Widget _buildDateSelector() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
       child: Card(
         elevation: 2,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -226,19 +228,23 @@ class _MealListScreenState extends State<MealListScreen> {
     );
   }
 
+  // Meal Booking Summary Card Widget
   Widget _buildSummaryCard(MealList mealList) {
     return Card(
       elevation: 2,
-      margin: const EdgeInsets.only(bottom: 16.0),
+      margin: const EdgeInsets.only(bottom: 8.0),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            const Text("Meal Booking Summary",
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-            const Divider(height: 20),
-            Row(
+      clipBehavior: Clip.antiAlias,
+      child: ExpansionTile(
+        title: const Text("Meal Booking Summary",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        subtitle: Text(
+            '${mealList.totalLunchBookings} Lunch, ${mealList.totalDinnerBookings} Dinner'),
+        initiallyExpanded: true,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildCountColumn(
@@ -247,12 +253,13 @@ class _MealListScreenState extends State<MealListScreen> {
                     "Dinner", mealList.totalDinnerBookings, Colors.indigo),
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
+  // Count Column (for Summary Card)
   Widget _buildCountColumn(String title, int count, Color color) {
     return Column(
       children: [
@@ -265,26 +272,26 @@ class _MealListScreenState extends State<MealListScreen> {
     );
   }
 
-  /// This widget builds the legend as a Grid
+  // Legend Grid Widget (for Charts)
   Widget _buildLegend(ThemeData theme, Map<String, dynamic> items) {
     final isDarkMode = theme.brightness == Brightness.dark;
-    final entries = items.entries.toList(); // Convert map to list to access by index
+    final entries = items.entries.toList();
 
     return GridView.builder(
-      physics: const NeverScrollableScrollPhysics(), // IMPORTANT: It's inside a ListView
-      shrinkWrap: true, // IMPORTANT: It's inside a ListView
+      physics: const NeverScrollableScrollPhysics(),
+      shrinkWrap: true,
       itemCount: entries.length,
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 200.0, // Each column will be at least 200px wide
-        mainAxisExtent: 60.0,       // Each item will have a fixed height of 60px
-        crossAxisSpacing: 10.0,     // Space between columns
-        mainAxisSpacing: 10.0,      // Space between rows
+        maxCrossAxisExtent: 200.0,
+        mainAxisExtent: 60.0,
+        crossAxisSpacing: 10.0,
+        mainAxisSpacing: 10.0,
       ),
       itemBuilder: (context, index) {
         final entry = entries[index];
-        final itemColor = _chartColors[index % _chartColors.length]; // Simpler index
-        
-        // This is the same widget as before, just arranged in a grid
+        final itemColor = _chartColors[index % _chartColors.length];
+
+        // Legend Item
         return Row(
           children: [
             Container(width: 12, height: 12, color: itemColor),
@@ -292,24 +299,27 @@ class _MealListScreenState extends State<MealListScreen> {
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center, // Center vertically
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    entry.key, // The item name
+                    entry.key,
                     style: TextStyle(
                       fontSize: 14,
                       color: isDarkMode ? Colors.white : Colors.black87,
                     ),
-                    overflow: TextOverflow.ellipsis, // Handle long names
+                    overflow: TextOverflow.ellipsis,
                     maxLines: 2,
                   ),
+                  // --- THIS IS THE MODIFIED WIDGET ---
                   Text(
-                    '(${entry.value})', // The count
+                    'Count: ${entry.value}', // Added "Count:"
                     style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
+                      fontSize: 13, // Slightly larger
+                      color: theme.colorScheme.primary, // Use theme color
+                      fontWeight: FontWeight.bold, // Make it bold
                     ),
                   ),
+                  // --- END OF MODIFICATION ---
                 ],
               ),
             ),
@@ -319,52 +329,57 @@ class _MealListScreenState extends State<MealListScreen> {
     );
   }
 
-  // --- MODIFIED FUNCTION SIGNATURE (no key) ---
-  Widget _buildItemChart(String title, IconData icon, Color color,
-      Map<String, dynamic> items) {
-    final theme = Theme.of(context);
-    
+  // Item Breakdown Card Widget
+  Widget _buildItemChart(
+    ThemeData theme,
+    String title,
+    IconData icon,
+    Color color,
+    Map<String, dynamic> items,
+  ) {
     return Card(
       elevation: 2,
-      margin: const EdgeInsets.only(bottom: 16.0),
+      margin: const EdgeInsets.only(bottom: 8.0),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
+      clipBehavior: Clip.antiAlias,
+      child: ExpansionTile(
+        initiallyExpanded: false,
+        title: Row(
           children: [
-            Row(
-              children: [
-                Icon(icon, color: color),
-                const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold, color: color),
-                ),
-              ],
-            ),
-            const Divider(height: 20),
-
-            // --- REMOVED hidden chart block ---
-            
-            // 2. THIS WIDGET IS VISIBLE ON THE SCREEN
-            // It contains *only* the counts/legend, now in a Grid.
-            Container(
-              color: theme.cardTheme.color,
-              padding: const EdgeInsets.all(16.0),
-              child: items.isEmpty
-                  ? const SizedBox(
-                      height: 150, // Keep height consistent
-                      child: Center(child: Text('No items for this meal')))
-                  : _buildLegend(theme, items), // Use the new grid legend
+            Icon(icon, color: color),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: TextStyle(
+                  fontSize: 18, fontWeight: FontWeight.bold, color: color),
             ),
           ],
         ),
+        // --- MODIFIED SUBTITLE ---
+        subtitle: Text(
+          '${items.length} items',
+          style: TextStyle(
+            fontWeight: FontWeight.w500,
+            color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
+          ),
+        ),
+        // --- END OF MODIFICATION ---
+        children: [
+          Container(
+            color: theme.cardTheme.color,
+            padding: const EdgeInsets.all(16.0),
+            child: items.isEmpty
+                ? const SizedBox(
+                    height: 150,
+                    child: Center(child: Text('No items for this meal')))
+                : _buildLegend(theme, items),
+          ),
+        ],
       ),
     );
   }
 
-  // --- WIDGET TO BUILD THE ROOM CHIP ---
+  // Room Chip Widget (for Booking List)
   Widget _buildRoomChip(ThemeData theme, int roomNumber) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -386,13 +401,12 @@ class _MealListScreenState extends State<MealListScreen> {
       ),
     );
   }
-  // --- END HELPER WIDGET ---
 
-  // --- WIDGET TO BUILD LUNCH/DINNER ROWS ---
+  // Meal Items Row Widget (for Booking List)
   Widget _buildMealItems(ThemeData theme, String title, IconData icon,
       Color color, List<String> items) {
     final bool isBooked = items.isNotEmpty;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -414,23 +428,25 @@ class _MealListScreenState extends State<MealListScreen> {
             isBooked ? items.join(', ') : 'Not Booked',
             style: isBooked
                 ? theme.textTheme.bodyMedium
-                : const TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
+                : const TextStyle(
+                    fontStyle: FontStyle.italic, color: Colors.grey),
           ),
         ),
       ],
     );
   }
-  // --- END HELPER WIDGET ---
 
-
+  // Student Bookings List Card
   Widget _buildBookingsListCard(
-      String title, IconData icon, Color color, List<MealListItem> bookings) {
-    // --- THIS WIDGET IS NOW MODIFIED ---
-    final theme = Theme.of(context);
-    
+    ThemeData theme,
+    String title,
+    IconData icon,
+    Color color,
+    List<MealListItem> bookings,
+  ) {
     return Card(
       elevation: 2,
-      margin: const EdgeInsets.only(bottom: 16.0),
+      margin: const EdgeInsets.only(bottom: 8.0),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       clipBehavior: Clip.antiAlias,
       child: ExpansionTile(
@@ -438,8 +454,16 @@ class _MealListScreenState extends State<MealListScreen> {
         title: Text(title,
             style: TextStyle(
                 fontSize: 18, fontWeight: FontWeight.bold, color: color)),
-        subtitle: Text('${bookings.length} students'),
-        initiallyExpanded: true,
+        // --- MODIFIED SUBTITLE ---
+        subtitle: Text(
+          '${bookings.length} students',
+          style: TextStyle(
+            fontWeight: FontWeight.w500,
+            color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
+          ),
+        ),
+        // --- END OF MODIFICATION ---
+        initiallyExpanded: false,
         children: [
           const Divider(height: 1, indent: 16, endIndent: 16),
           ListView.separated(
@@ -450,7 +474,7 @@ class _MealListScreenState extends State<MealListScreen> {
                 const Divider(height: 1, indent: 16, endIndent: 16),
             itemBuilder: (context, index) {
               final booking = bookings[index];
-              // --- REPLACED LISTTILE WITH CUSTOM WIDGET ---
+              // Student Booking Item
               return Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
@@ -482,7 +506,6 @@ class _MealListScreenState extends State<MealListScreen> {
                     _buildMealItems(
                       theme,
                       'Dinner',
-      
                       Icons.nightlight_round_outlined,
                       Colors.indigo,
                       booking.dinnerPick,
@@ -490,7 +513,6 @@ class _MealListScreenState extends State<MealListScreen> {
                   ],
                 ),
               );
-              // --- END OF REPLACEMENT ---
             },
           )
         ],

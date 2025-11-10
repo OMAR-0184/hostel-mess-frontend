@@ -20,6 +20,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _roomNumberController = TextEditingController();
   bool _isLoading = false;
 
+  // --- ADDED: State variable to track password visibility ---
+  bool _isPasswordObscured = true;
+
   void _register() async {
     FocusManager.instance.primaryFocus?.unfocus();
     setState(() => _isLoading = true);
@@ -89,11 +92,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       const SizedBox(height: 12),
                       _buildTextField(_emailController, 'Email address', Icons.email_outlined, isEmail: true),
                       const SizedBox(height: 12),
+                      // This call remains the same
                       _buildTextField(_passwordController, 'Password', Icons.lock_outline, obscureText: true),
                       const SizedBox(height: 12),
                       _buildTextField(_roomNumberController, 'Room Number', Icons.room_outlined, isNumber: true),
-                      const SizedBox(height: 16),
-                      _buildTermsAndConditions(),
                       const SizedBox(height: 16),
                       _isLoading
                           ? const Center(child: CircularProgressIndicator())
@@ -111,11 +113,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
+  // --- UPDATED: This method now handles the password toggle ---
   Widget _buildTextField(TextEditingController controller, String labelText, IconData icon, {bool obscureText = false, bool isEmail = false, bool isNumber = false}) {
     final theme = Theme.of(context);
+    final bool isPassword = obscureText; // Identify password field
+
     return TextField(
       controller: controller,
-      obscureText: obscureText,
+      // Use state variable IF it's a password field
+      obscureText: isPassword ? _isPasswordObscured : false,
       keyboardType: isEmail ? TextInputType.emailAddress : (isNumber ? TextInputType.number : TextInputType.text),
       decoration: InputDecoration(
         labelText: labelText,
@@ -131,6 +137,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
           borderRadius: BorderRadius.circular(10.0),
           borderSide: BorderSide(color: theme.colorScheme.primary, width: 2.0),
         ),
+        // --- ADDED: Suffix icon for password field ---
+        suffixIcon: isPassword
+            ? IconButton(
+                icon: Icon(
+                  _isPasswordObscured ? Icons.visibility_off : Icons.visibility,
+                  color: Colors.grey[600],
+                ),
+                onPressed: () {
+                  setState(() {
+                    _isPasswordObscured = !_isPasswordObscured;
+                  });
+                },
+              )
+            : null,
       ),
     );
   }

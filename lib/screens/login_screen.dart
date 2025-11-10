@@ -19,6 +19,9 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
+  
+  // --- ADDED: State variable to track password visibility ---
+  bool _isPasswordObscured = true;
 
   void _login() async {
     FocusManager.instance.primaryFocus?.unfocus();
@@ -73,6 +76,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 32),
                     _buildTextField(_emailController, 'Email', Icons.email_outlined, isEmail: true),
                     const SizedBox(height: 16),
+                    // This call remains the same, the logic is now inside _buildTextField
                     _buildTextField(_passwordController, 'Password', Icons.lock_outlined, obscureText: true),
                     const SizedBox(height: 8),
                     _buildForgotPasswordButton(),
@@ -92,11 +96,15 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  // --- UPDATED: This method now handles the password toggle ---
   Widget _buildTextField(TextEditingController controller, String labelText, IconData icon, {bool obscureText = false, bool isEmail = false}) {
     final theme = Theme.of(context);
+    final bool isPassword = obscureText; // We use 'obscureText' to identify the password field
+
     return TextField(
       controller: controller,
-      obscureText: obscureText,
+      // Use the state variable IF it's a password field
+      obscureText: isPassword ? _isPasswordObscured : false, 
       keyboardType: isEmail ? TextInputType.emailAddress : TextInputType.text,
       decoration: InputDecoration(
         labelText: labelText,
@@ -112,6 +120,20 @@ class _LoginScreenState extends State<LoginScreen> {
           borderRadius: BorderRadius.circular(10.0),
           borderSide: BorderSide(color: theme.colorScheme.primary, width: 2.0),
         ),
+        // --- ADDED: Suffix icon for password field ---
+        suffixIcon: isPassword
+            ? IconButton(
+                icon: Icon(
+                  _isPasswordObscured ? Icons.visibility_off : Icons.visibility,
+                  color: Colors.grey[600],
+                ),
+                onPressed: () {
+                  setState(() {
+                    _isPasswordObscured = !_isPasswordObscured;
+                  });
+                },
+              )
+            : null, // No icon if it's not a password field
       ),
     );
   }

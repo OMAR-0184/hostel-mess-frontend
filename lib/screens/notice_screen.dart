@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
+// REMOVED: import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import '../provider/auth_provider.dart';
@@ -107,10 +107,10 @@ class _NoticeScreenState extends State<NoticeScreen> {
               message: 'No notices have been posted yet.',
             );
           }
-          return LiquidPullToRefresh(
+          // --- REPLACED LiquidPullToRefresh with RefreshIndicator ---
+          return RefreshIndicator(
             onRefresh: _refreshNotices,
             color: theme.colorScheme.primary,
-            backgroundColor: theme.colorScheme.secondary.withOpacity(0.5),
             child: AnimationLimiter(
               child: ListView.builder(
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -146,6 +146,7 @@ class _NoticeScreenState extends State<NoticeScreen> {
               ),
             ),
           );
+          // --- END OF REPLACEMENT ---
         },
       ),
     );
