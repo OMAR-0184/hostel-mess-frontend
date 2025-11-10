@@ -9,19 +9,18 @@ class ThemeProvider with ChangeNotifier {
   ThemeProvider() {
     _loadTheme();
   }
-
-  // Fetches the saved theme preference from local storage
   void _loadTheme() async {
     final prefs = await SharedPreferences.getInstance();
-    // Reads the 'isDarkMode' boolean; defaults to false (light mode) if not found
-    final isDark = prefs.getBool('isDarkMode') ?? false;
-    _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
+    if (prefs.containsKey('isDarkMode')) {
+      final isDark = prefs.getBool('isDarkMode') ?? false;
+      _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
+    }
+
     notifyListeners();
   }
-
-  // Toggles the theme and saves the preference
   void toggleTheme() async {
     _themeMode = _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
+
     
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isDarkMode', _themeMode == ThemeMode.dark);

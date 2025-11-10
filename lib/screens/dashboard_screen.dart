@@ -7,7 +7,7 @@ import '../provider/auth_provider.dart';
 import '../provider/booking_provider.dart';
 import '../provider/notice_provider.dart';
 import 'package:intl/intl.dart';
-import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
+// REMOVED: import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
 
 import 'booking_screen.dart';
 import 'menu_screen.dart';
@@ -67,10 +67,10 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
-        child: LiquidPullToRefresh(
+        // --- REPLACED LiquidPullToRefresh with RefreshIndicator ---
+        child: RefreshIndicator(
           onRefresh: _refreshData,
-          color: theme.colorScheme.primary,
-          backgroundColor: theme.colorScheme.secondary.withOpacity(0.5),
+          color: theme.colorScheme.primary, // Standard indicator color
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
@@ -88,6 +88,7 @@ class _DashboardScreenState extends State<DashboardScreen> with AutomaticKeepAli
             ),
           ),
         ),
+        // --- END OF REPLACEMENT ---
       ),
     );
   }

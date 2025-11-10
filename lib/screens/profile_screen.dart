@@ -523,6 +523,9 @@ class ProfileScreen extends StatelessWidget {
             TextButton(
               child: const Text('Logout', style: TextStyle(color: Colors.red)),
               onPressed: () {
+                // --- FIX: Pop dialog FIRST ---
+                Navigator.of(dialogContext).pop(); 
+                // --- THEN call logout ---
                 Provider.of<AuthProvider>(context, listen: false).logout();
               },
             ),

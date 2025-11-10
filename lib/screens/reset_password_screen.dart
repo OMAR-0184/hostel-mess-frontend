@@ -19,6 +19,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
 
+  // --- ADDED: State variable to track password visibility ---
+  bool _isPasswordObscured = true;
+
   void _resetPassword() async {
     FocusManager.instance.primaryFocus?.unfocus();
     setState(() => _isLoading = true);
@@ -100,6 +103,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                     const SizedBox(height: 32),
                     _buildTextField(_tokenController, 'Token', Icons.vpn_key_outlined),
                     const SizedBox(height: 16),
+                    // This call remains the same
                     _buildTextField(_passwordController, 'New Password', Icons.lock_outline, obscureText: true),
                     const SizedBox(height: 24),
                     _isLoading
@@ -115,11 +119,15 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     );
   }
 
+  // --- UPDATED: This method now handles the password toggle ---
   Widget _buildTextField(TextEditingController controller, String labelText, IconData icon, {bool obscureText = false}) {
     final theme = Theme.of(context);
+    final bool isPassword = obscureText; // Identify password field
+
     return TextField(
       controller: controller,
-      obscureText: obscureText,
+      // Use state variable IF it's a password field
+      obscureText: isPassword ? _isPasswordObscured : false,
       decoration: InputDecoration(
         labelText: labelText,
         prefixIcon: Icon(icon, color: Colors.grey[600]),
@@ -134,6 +142,20 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           borderRadius: BorderRadius.circular(10.0),
           borderSide: BorderSide(color: theme.colorScheme.primary, width: 2.0),
         ),
+        // --- ADDED: Suffix icon for password field ---
+        suffixIcon: isPassword
+            ? IconButton(
+                icon: Icon(
+                  _isPasswordObscured ? Icons.visibility_off : Icons.visibility,
+                  color: Colors.grey[600],
+                ),
+                onPressed: () {
+                  setState(() {
+                    _isPasswordObscured = !_isPasswordObscured;
+                  });
+                },
+              )
+            : null,
       ),
     );
   }
