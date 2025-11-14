@@ -31,18 +31,10 @@ class _MenuScreenState extends State<MenuScreen> {
       lastDate: DateTime.now().add(const Duration(days: 7)),
     );
     if (picked != null && picked != _selectedDate) {
-      // --- FIX: Call the provider *first* ---
-      // This tells the provider to clear the old menu and set isLoading = true.
-      // The Consumer widget will immediately update to show the loading spinner.
       Provider.of<MenuProvider>(context, listen: false).fetchMenuForDate(picked);
-
-      // --- Then, call setState to update the date selector UI ---
-      // This will rebuild the screen, but the Consumer will correctly
-      // continue to show the loading spinner until the fetch is complete.
       setState(() {
         _selectedDate = picked;
       });
-      // --- END FIX ---
     }
   }
 

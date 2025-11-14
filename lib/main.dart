@@ -33,7 +33,7 @@ class AppThemes {
       color: Colors.white,
       elevation: 2, 
     ),
-    // --- CHANGED: Switched to 'Outfit' for a modern, funky, and readable look ---
+
     textTheme: GoogleFonts.outfitTextTheme(ThemeData.light().textTheme),
     useMaterial3: true,
   );
@@ -57,7 +57,6 @@ class AppThemes {
       color: Color(0xFF2C2C2E), // Matches surface
       elevation: 4,
     ),
-    // --- CHANGED: Switched to 'Outfit' for dark theme as well ---
     textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme).apply(
       bodyColor: const Color(0xFFF5F5F5), // Brighter white text
       displayColor: const Color(0xFFF5F5F5), // Brighter white text
@@ -68,10 +67,8 @@ class AppThemes {
 
 
 void main() async {
-  // Ensure Flutter is initialized
   WidgetsFlutterBinding.ensureInitialized();
 
-  // This will initialize Firebase on mobile but skip it on web.
   if (!kIsWeb) {
     await Firebase.initializeApp();
   }

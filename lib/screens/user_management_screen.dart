@@ -20,7 +20,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   final TextEditingController _roomFilterController = TextEditingController();
   String _selectedRole = 'All';
   List<User> _filteredUsers = [];
-  // --- (1) MODIFICATION: Added state for expandable filter ---
   bool _isFilterExpanded = false;
   
   final List<String> _roles = ['All', 'student', 'convenor', 'mess_committee'];
@@ -47,7 +46,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   void dispose() {
     _searchController.removeListener(_filterUsers);
     _searchController.dispose();
-    // --- FIX: Corrected listener removal in dispose ---
     _roomFilterController.removeListener(_filterUsers); 
     _roomFilterController.dispose();
     super.dispose();
@@ -84,7 +82,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     setState(() {
       _selectedRole = 'All';
     });
-    // No need to call _filterUsers() here as the controllers clearing will trigger it
   }
 
   @override
@@ -111,14 +108,11 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         elevation: 0,
         foregroundColor: theme.colorScheme.primary,
         actions: [
-          // --- (2) MODIFICATION: Changed filter button action ---
           IconButton(
             icon: Icon(
-              // Use a different icon when expanded
               _isFilterExpanded ? Icons.filter_list_off : Icons.filter_list,
               color: filtersActive ? theme.colorScheme.primary : Colors.grey,
             ),
-            // Toggle the expanded state
             onPressed: () => setState(() => _isFilterExpanded = !_isFilterExpanded),
             tooltip: 'Filter Users',
           )
@@ -128,7 +122,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSearchBar(theme),
-          // --- (3) MODIFICATION: Added new expandable filter card ---
           _buildFilterCard(theme), 
           Padding(
             padding: const EdgeInsets.fromLTRB(20.0, 12.0, 20.0, 12.0),
@@ -154,8 +147,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               ],
             ),
           ),
-          // --- (4) MODIFICATION: Removed old filter chips, they are redundant now ---
-          // _buildActiveFilterChips(theme), // This is no longer needed
           Expanded(
             child: Consumer<AdminProvider>(
               builder: (context, adminProvider, child) {
@@ -202,7 +193,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     );
   }
 
-  // --- REFINED SEARCH BAR (Floating & Modern) ---
   Widget _buildSearchBar(ThemeData theme) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 8.0), // Reduced bottom padding
@@ -232,9 +222,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     );
   }
 
-  // --- (5) NEW WIDGET: Expandable Filter Card (MODERNIZED) ---
   Widget _buildFilterCard(ThemeData theme) {
-    // Helper to get prefix icon based on role
     IconData _getRoleIcon(String role) {
       switch (role) {
         case 'convenor':
@@ -355,9 +343,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     );
   }
 
-  // --- (6) REMOVED _buildActiveFilterChips ---
   
-  // --- HIGH DENSITY LIST TILE (Unchanged) ---
   Widget _buildUserListTile(BuildContext context, User user, ThemeData theme) {
     final userRole = user.role ?? 'student';
     final roleColor = _getRoleColor(userRole);
@@ -489,7 +475,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     );
   }
 
-  // --- (8) REMOVED old _showFilterSheet ---
 
   void _showChangeRoleBottomSheet(BuildContext context, User user) {
     String selectedRole = user.role ?? 'student';
@@ -583,7 +568,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                     autofocus: true,
                     decoration: InputDecoration( // Changed to non-const
                       hintText: 'DELETE',
-                      // MODIFICATION: Added borderRadius to OutlineInputBorder
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10.0), // Rounded input
                       ),

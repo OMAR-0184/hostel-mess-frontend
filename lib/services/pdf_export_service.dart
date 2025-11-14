@@ -2,7 +2,7 @@
 
 import 'dart:async';
 import 'dart:typed_data';
-import 'package:flutter/services.dart'; // <-- THIS IS THE FIX (was 'package://')
+import 'package:flutter/services.dart'; 
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -10,14 +10,11 @@ import '../provider/admin_provider.dart';
 import 'package:printing/printing.dart';
 
 class PdfExportService {
-  // --- DESIGN CONSTANTS ---
   static const PdfColor primaryColor = PdfColors.indigo;
   static const PdfColor accentColor = PdfColors.orange;
   static const PdfColor lightGrey = PdfColors.grey200;
   static const PdfColor darkGrey = PdfColors.grey700;
 
-  // --- MODIFIED FUNCTION SIGNATURE ---
-  // Removed lunchChartImage and dinnerChartImage parameters
   static Future<Uint8List> generateMealListPdf(
     MealList mealList,
   ) async {
@@ -30,19 +27,16 @@ class PdfExportService {
       bold: poppinsBold,
     );
     
-    // --- REMOVED chart image creation ---
 
     doc.addPage(
       pw.MultiPage(
-        // Tighter margins to save paper
         margin: const pw.EdgeInsets.symmetric(
             horizontal: 2.0 * PdfPageFormat.cm,
             vertical: 1.5 * PdfPageFormat.cm),
         pageFormat: PdfPageFormat.a4,
-        header: null, // No repeating header
+        header: null, 
         footer: (context) => _buildFooter(context, poppinsFont),
         build: (context) => [
-          // 1. Header (Only on first page)
           _buildHeader(mealList, poppinsBold),
           pw.SizedBox(height: 20),
 

@@ -193,10 +193,10 @@ class _NoticeCardState extends State<NoticeCard> {
 
     final int colorIndex = widget.notice.id % 4;
     final Color accentColor = [
-      const Color(0xFF7F00FF), // Electric Violet
-      const Color(0xFF00C853), // Teal/Green
-      const Color(0xFFFF6D00), // Coral/Orange
-      const Color(0xFF2962FF), // Blue
+      const Color(0xFF7F00FF), 
+      const Color(0xFF00C853), 
+      const Color(0xFFFF6D00), 
+      const Color(0xFF2962FF), 
     ][colorIndex];
 
     final Color cardBackground = isDarkMode
@@ -213,13 +213,11 @@ class _NoticeCardState extends State<NoticeCard> {
           color: cardBackground,
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
-            // MODIFICATION: Use a stronger accent shadow in Light Mode
             BoxShadow(
-              color: accentColor.withOpacity(isDarkMode ? 0.08 : 0.2), // Increased opacity for light mode
-              blurRadius: isDarkMode ? 20 : 18, // Adjusted blur
+              color: accentColor.withOpacity(isDarkMode ? 0.08 : 0.2), 
+              blurRadius: isDarkMode ? 20 : 18, 
               offset: const Offset(0, 8),
             ),
-            // MODIFICATION: Add a standard subtle shadow for definition in Light Mode
             if (!isDarkMode)
                BoxShadow(
                 color: Colors.black.withOpacity(0.05),
@@ -228,7 +226,7 @@ class _NoticeCardState extends State<NoticeCard> {
               ),
           ],
           border: Border.all(
-            color: accentColor.withOpacity(isDarkMode ? 0.2 : 0.15), // Slightly more visible border/outline
+            color: accentColor.withOpacity(isDarkMode ? 0.2 : 0.15), 
             width: 1,
           ),
         ),
@@ -243,7 +241,6 @@ class _NoticeCardState extends State<NoticeCard> {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        // MODIFICATION: Significantly increased opacity for a colored layer in Light Mode
                         accentColor.withOpacity(isDarkMode ? 0.05 : 0.15), 
                         Colors.transparent,
                       ],

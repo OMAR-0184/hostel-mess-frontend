@@ -12,7 +12,7 @@ import 'admin/post_notice_screen.dart';
 import 'reset_password_screen.dart';
 import 'edit_profile_screen.dart';
 import 'feedback_screen.dart';
-import 'my_bookings_screen.dart'; // --- 1. IMPORT ADDED ---
+import 'my_bookings_screen.dart'; 
 
 
 class ProfileScreen extends StatelessWidget {
@@ -26,7 +26,6 @@ class ProfileScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      // --- (1) MODIFICATION: AppBar ADDED ---
       appBar: AppBar(
         title: Text('PROFILE', 
           style: TextStyle(
@@ -41,9 +40,7 @@ class ProfileScreen extends StatelessWidget {
         elevation: 0,
         foregroundColor: theme.colorScheme.primary,
       ),
-      // --- END MODIFICATION ---
       body: SafeArea(
-        // Set top to false because we now have an AppBar
         top: false,
         child: user == null
             ? const Center(child: CircularProgressIndicator())
@@ -102,21 +99,18 @@ class ProfileScreen extends StatelessWidget {
         Column(
           children: [
             const SizedBox(height: 20),
-            // Avatar with Glow and Border
             Container(
               width: 110,
               height: 110,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: const LinearGradient(
-                  // MODIFIED: Changed to blue gradient
                   colors: [Color(0xFF00D4FF), Color(0xFF007BFF)], 
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    // MODIFIED: Changed shadow color
                     color: const Color(0xFF00D4FF).withOpacity(0.5), 
                     blurRadius: 20,
                     offset: const Offset(0, 8),
@@ -137,10 +131,9 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             
-            // MODIFICATION START: Name and Edit Button in a centered Row
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min, // Keep row tight to content
+              mainAxisSize: MainAxisSize.min, 
               children: [
                 Text(
                   user.name,
@@ -150,7 +143,6 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 4),
-                // Pencil Icon Button
                 IconButton(
                   onPressed: () {
                     Navigator.push(
@@ -171,11 +163,9 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ],
             ),
-            // MODIFICATION END
 
             const SizedBox(height: 8),
             
-            // Role Chip
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               decoration: BoxDecoration(
@@ -195,17 +185,12 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
 
-            // Stats Row
             _buildStatsRow(theme, user),
           ],
         ),
-        
-        // REMOVED: Old Positioned Edit Button is now gone
       ],
     );
   }
-
-  // --- 3. STATS ROW (Meals Removed) ---
   Widget _buildStatsRow(ThemeData theme, User user) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24),
@@ -312,11 +297,10 @@ class ProfileScreen extends StatelessWidget {
           title: "Daily Meal List",
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MealListScreen())),
         ),
-        // --- 2. NEW BUTTON ADDED ---
         _buildModernListTile(
           context: context, 
-          icon: Icons.history_rounded, // New icon
-          color: Colors.cyan, // New color
+          icon: Icons.history_rounded, 
+          color: Colors.cyan, 
           title: "My Booking History",
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MyBookingsScreen())),
         ),
@@ -324,8 +308,8 @@ class ProfileScreen extends StatelessWidget {
           context: context, 
           icon: Icons.star_outline_rounded,
           color: Colors.teal,
-          title: "Rate Your Meal", // <--- This button
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => FeedbackScreen())), // <--- Opens FeedbackScreen
+          title: "Rate Your Meal", 
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => FeedbackScreen())), 
 ),
       ],
     );
@@ -341,7 +325,6 @@ class ProfileScreen extends StatelessWidget {
           title: "Reset Password",
           onTap: () => _showResetPasswordConfirmation(context, user),
         ),
-        // Theme Toggle Integration
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
           child: Row(
@@ -368,7 +351,6 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  // --- 2. SQUIRCLE LIST TILE ---
   Widget _buildModernListTile({
     required BuildContext context,
     required IconData icon,
@@ -382,7 +364,6 @@ class ProfileScreen extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
         child: Row(
           children: [
-            // The Squircle
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
@@ -407,7 +388,6 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  // --- 4. MINIMAL LOGOUT BUTTON ---
   Widget _buildLogoutButton(BuildContext context) {
     return Center(
       child: TextButton(
@@ -424,7 +404,6 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  // --- HELPER WIDGETS ---
 
   Widget _buildThemeToggleSwitch(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
