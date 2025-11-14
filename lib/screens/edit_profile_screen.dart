@@ -172,14 +172,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: const LinearGradient(
-              // MODIFIED: Changed to blue gradient
               colors: [Color(0xFF00D4FF), Color(0xFF007BFF)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             boxShadow: [
               BoxShadow(
-                // MODIFIED: Changed shadow color
                 color: const Color(0xFF00D4FF).withOpacity(0.4),
                 blurRadius: 20,
                 offset: const Offset(0, 10),

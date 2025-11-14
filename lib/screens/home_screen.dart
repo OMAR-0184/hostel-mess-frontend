@@ -1,16 +1,14 @@
-// lib/screens/home_screen.dart
 
 import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../provider/auth_provider.dart';
-import 'dart:ui'; // Required for BackdropFilter
+import 'dart:ui'; 
 
 // Import the screens
 import 'dashboard_screen.dart';
 import 'booking_screen.dart';
-// import 'my_bookings_screen.dart'; // No longer needed in navbar
 import 'notice_screen.dart';
 import 'profile_screen.dart';
 
@@ -176,14 +174,12 @@ class _HomeScreenState extends State<HomeScreen> {
       
       // --- NAVBAR WRAPPED FOR GLASS EFFECT ---
       bottomNavigationBar: ClipRRect(
-        // Clips the blur to match the nav bar's rounded corners
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(32),
           topRight: Radius.circular(32),
         ),
         child: BackdropFilter(
-          // --- MODIFIED: Increased blur sigma for a "glossier" look ---
-          filter: ImageFilter.blur(sigmaX: 30.0, sigmaY: 30.0), // Was 20.0
+          filter: ImageFilter.blur(sigmaX: 30.0, sigmaY: 30.0), 
           child: AnimatedBottomNavigationBar(
             icons: iconList,
             activeIndex: _selectedIndex,
@@ -195,20 +191,18 @@ class _HomeScreenState extends State<HomeScreen> {
             activeColor: theme.colorScheme.primary,
             inactiveColor: theme.colorScheme.onSurface.withOpacity(0.6),
             
-            // --- MODIFIED: Decreased opacity for more transparency ---
             backgroundColor: isDarkMode 
-                ? Colors.black.withOpacity(0.25) // Was 0.3
-                : Colors.white.withOpacity(0.25), // Was 0.3
+                ? Colors.black.withOpacity(0.25) 
+                : Colors.white.withOpacity(0.25), 
             splashColor: theme.colorScheme.primary.withOpacity(0.15),
             iconSize: 26, 
-            // --- MODIFIED: Made shadow (top border) more subtle ---
             shadow: BoxShadow(
               color: isDarkMode 
-                  ? Colors.white.withOpacity(0.1) // Was 0.15
-                  : Colors.black.withOpacity(0.1), // Was 0.15
+                  ? Colors.white.withOpacity(0.1) 
+                  : Colors.black.withOpacity(0.1), 
               blurRadius: 0,
-              spreadRadius: 0.25, // Was 0.5
-              offset: const Offset(0, -0.25), // Was -0.5
+              spreadRadius: 0.25, 
+              offset: const Offset(0, -0.25), 
             ),
           ),
         ),

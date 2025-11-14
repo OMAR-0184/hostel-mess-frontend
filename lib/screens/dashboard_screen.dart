@@ -138,7 +138,6 @@ class _DashboardScreenState extends State<DashboardScreen>
                         _buildLatestNoticesSection(context, theme),
                         const SizedBox(height: 32),
                         _buildFooterSection(context, theme),
-                        // --- FIX: Removed old SizedBox(height: 80) ---
                       ],
                     ),
                   ),
@@ -202,7 +201,6 @@ class _DashboardScreenState extends State<DashboardScreen>
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: const LinearGradient(
-              // MODIFIED: Changed to blue gradient
               colors: [
                 Color(0xFF00D4FF), 
                 Color(0xFF007BFF), 
@@ -212,7 +210,6 @@ class _DashboardScreenState extends State<DashboardScreen>
             ),
             boxShadow: [
               BoxShadow(
-                // MODIFIED: Changed shadow color
                 color: const Color(0xFF00D4FF).withOpacity(0.4),
                 blurRadius: 12,
                 offset: const Offset(0, 6),

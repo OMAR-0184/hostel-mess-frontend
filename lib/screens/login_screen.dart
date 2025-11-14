@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
-import 'dart:ui'; // Required for BackdropFilter
+import 'dart:ui'; 
 import '../provider/auth_provider.dart';
 import 'forgot_password_screen.dart';
 import 'register_screen.dart';
