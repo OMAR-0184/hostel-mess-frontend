@@ -18,8 +18,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   final _tokenController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
-
-  // --- ADDED: State variable to track password visibility ---
   bool _isPasswordObscured = true;
 
   void _resetPassword() async {
@@ -85,7 +83,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   ),
                   children: [
                     Lottie.asset(
-                      'assets/reset_password.json', // Add a relevant Lottie animation
+                      'assets/reset_password.json', 
                       height: 220,
                     ),
                     const SizedBox(height: 24),
@@ -103,12 +101,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                     const SizedBox(height: 32),
                     _buildTextField(_tokenController, 'Token', Icons.vpn_key_outlined),
                     const SizedBox(height: 16),
-                    // This call remains the same
                     _buildTextField(_passwordController, 'New Password', Icons.lock_outline, obscureText: true),
                     const SizedBox(height: 24),
                     _isLoading
                         ? Center(child: Lottie.asset('assets/loader.json', height: 60))
-                        : _buildResetButton(),
+                        : _buildResetButton(), // Updated button style
                   ],
                 ),
               ),
@@ -119,14 +116,12 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     );
   }
 
-  // --- UPDATED: This method now handles the password toggle ---
   Widget _buildTextField(TextEditingController controller, String labelText, IconData icon, {bool obscureText = false}) {
     final theme = Theme.of(context);
-    final bool isPassword = obscureText; // Identify password field
+    final bool isPassword = obscureText; 
 
     return TextField(
       controller: controller,
-      // Use state variable IF it's a password field
       obscureText: isPassword ? _isPasswordObscured : false,
       decoration: InputDecoration(
         labelText: labelText,
@@ -142,7 +137,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           borderRadius: BorderRadius.circular(10.0),
           borderSide: BorderSide(color: theme.colorScheme.primary, width: 2.0),
         ),
-        // --- ADDED: Suffix icon for password field ---
         suffixIcon: isPassword
             ? IconButton(
                 icon: Icon(
@@ -160,16 +154,44 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     );
   }
 
+  // --- MODIFIED BUTTON WITH MODERN GRADIENT ---
   Widget _buildResetButton() {
-    return ElevatedButton(
-      onPressed: _resetPassword,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
-        elevation: 0,
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8.0),
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFF7F00FF), // Violet
+            Color(0xFFE100FF), // Fuchsia
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF7F00FF).withOpacity(0.4),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: const Text('Reset Password', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+      child: ElevatedButton(
+        onPressed: _resetPassword,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+        ),
+        child: const Text(
+          'Reset Password', 
+          style: TextStyle(
+            fontSize: 16, 
+            fontWeight: FontWeight.bold, 
+            color: Colors.white
+          )
+        ),
+      ),
     );
   }
 }

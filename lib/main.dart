@@ -33,7 +33,8 @@ class AppThemes {
       color: Colors.white,
       elevation: 2, 
     ),
-    textTheme: GoogleFonts.poppinsTextTheme(ThemeData.light().textTheme),
+    // --- CHANGED: Switched to 'Outfit' for a modern, funky, and readable look ---
+    textTheme: GoogleFonts.outfitTextTheme(ThemeData.light().textTheme),
     useMaterial3: true,
   );
 
@@ -56,7 +57,8 @@ class AppThemes {
       color: Color(0xFF2C2C2E), // Matches surface
       elevation: 4,
     ),
-    textTheme: GoogleFonts.poppinsTextTheme(ThemeData.dark().textTheme).apply(
+    // --- CHANGED: Switched to 'Outfit' for dark theme as well ---
+    textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme).apply(
       bodyColor: const Color(0xFFF5F5F5), // Brighter white text
       displayColor: const Color(0xFFF5F5F5), // Brighter white text
     ),

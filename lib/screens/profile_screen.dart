@@ -10,7 +10,10 @@ import 'meallist_screen.dart';
 import 'admin/set_menu_screen.dart';
 import 'admin/post_notice_screen.dart';
 import 'reset_password_screen.dart';
-import 'edit_profile_screen.dart'; // IMPORTED THE NEW SCREEN
+import 'edit_profile_screen.dart';
+import 'feedback_screen.dart';
+import 'my_bookings_screen.dart'; // --- 1. IMPORT ADDED ---
+
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -23,388 +26,428 @@ class ProfileScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
+      // --- (1) MODIFICATION: AppBar ADDED ---
+      appBar: AppBar(
+        title: Text('PROFILE', 
+          style: TextStyle(
+            color: theme.colorScheme.primary, 
+            fontSize: 22, 
+            fontWeight: FontWeight.w900, 
+            letterSpacing: 1.2,
+          )
+        ),
+        centerTitle: true,
+        backgroundColor: theme.scaffoldBackgroundColor,
+        elevation: 0,
+        foregroundColor: theme.colorScheme.primary,
+      ),
+      // --- END MODIFICATION ---
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
+        // Set top to false because we now have an AppBar
+        top: false,
+        child: user == null
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeroHeader(context, theme, user),
+                    const SizedBox(height: 24),
+                    
+                    if (user.role == 'convenor' || user.role == 'mess_committee') ...[
+                      _buildSectionTitle(theme, "MANAGEMENT"),
+                      _buildAdminSection(context, user),
+                      const SizedBox(height: 24),
+                    ],
+
+                    _buildSectionTitle(theme, "MEALS"),
+                    _buildMealsSection(context),
+                    const SizedBox(height: 24),
+
+                    _buildSectionTitle(theme, "PREFERENCES"),
+                    _buildPreferencesSection(context, theme, user),
+                    
+                    const SizedBox(height: 40),
+                    _buildLogoutButton(context),
+                    const SizedBox(height: 40),
+                  ],
+                ),
+              ),
+      ),
+    );
+  }
+
+  // --- 1. HERO PROFILE HEADER ---
+  Widget _buildHeroHeader(BuildContext context, ThemeData theme, User user) {
+    final isDarkMode = theme.brightness == Brightness.dark;
+
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        // Background Gradient
+        Container(
+          height: 280,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: isDarkMode 
+                  ? [Colors.black.withOpacity(0.8), Colors.transparent]
+                  : [theme.colorScheme.primary.withOpacity(0.05), Colors.transparent],
+            ),
+          ),
+        ),
+        
+        Column(
           children: [
-            if (user != null) ...[
-              _buildUserInfoSection(context, theme, user), // Pass context
-              const SizedBox(height: 24),
-              if (user.role == 'convenor' || user.role == 'mess_committee') ...[
-                _buildAdminPanel(theme, context, user),
-                const SizedBox(height: 24),
+            const SizedBox(height: 20),
+            // Avatar with Glow and Border
+            Container(
+              width: 110,
+              height: 110,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const LinearGradient(
+                  // MODIFIED: Changed to blue gradient
+                  colors: [Color(0xFF00D4FF), Color(0xFF007BFF)], 
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    // MODIFIED: Changed shadow color
+                    color: const Color(0xFF00D4FF).withOpacity(0.5), 
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+                border: Border.all(color: Colors.white, width: 3),
+              ),
+              child: Center(
+                child: Text(
+                  user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
+                  style: const TextStyle(
+                    fontSize: 48,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // MODIFICATION START: Name and Edit Button in a centered Row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min, // Keep row tight to content
+              children: [
+                Text(
+                  user.name,
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                // Pencil Icon Button
+                IconButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+                    );
+                  },
+                  icon: Icon(Icons.edit_outlined, 
+                    color: theme.colorScheme.primary, 
+                    size: 20
+                  ),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.transparent, 
+                    padding: EdgeInsets.zero, 
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
               ],
-              // --- ADDED MEALS SECTION FOR ALL USERS ---
-              _buildMealsSection(context, theme),
-              const SizedBox(height: 24),
-              _buildAccountSettings(context, theme, user),
-            ],
+            ),
+            // MODIFICATION END
+
+            const SizedBox(height: 8),
+            
+            // Role Chip
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              decoration: BoxDecoration(
+                color: _getRoleColor(user.role).withOpacity(0.15),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: _getRoleColor(user.role).withOpacity(0.5), width: 1),
+              ),
+              child: Text(
+                (user.role ?? 'Student').toUpperCase(),
+                style: TextStyle(
+                  color: _getRoleColor(user.role),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ),
             const SizedBox(height: 24),
-            _buildLogoutButton(context),
+
+            // Stats Row
+            _buildStatsRow(theme, user),
+          ],
+        ),
+        
+        // REMOVED: Old Positioned Edit Button is now gone
+      ],
+    );
+  }
+
+  // --- 3. STATS ROW (Meals Removed) ---
+  Widget _buildStatsRow(ThemeData theme, User user) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          )
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _buildStatItem(theme, "Room", "${user.roomNumber}"),
+          Container(height: 30, width: 1, color: theme.dividerColor),
+          _buildStatItem(theme, "Status", user.isMessActive == true ? "Active" : "Inactive"),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem(ThemeData theme, String label, String value) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label.toUpperCase(),
+          style: TextStyle(
+            fontSize: 11,
+            color: Colors.grey.shade500,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // --- SECTION HELPERS ---
+  Widget _buildSectionTitle(ThemeData theme, String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 24.0, bottom: 8.0),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.bold,
+          color: Colors.grey.shade600,
+          letterSpacing: 1.2,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAdminSection(BuildContext context, User user) {
+    return Column(
+      children: [
+        if (user.role == 'convenor')
+          _buildModernListTile(
+            context: context, 
+            icon: Icons.edit_calendar_rounded,
+            color: Colors.deepPurple,
+            title: "Set Daily Menu",
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SetMenuScreen())),
+          ),
+        _buildModernListTile(
+          context: context, 
+          icon: Icons.campaign_rounded,
+          color: Colors.deepPurple,
+          title: "Post a Notice",
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => PostNoticeScreen())),
+        ),
+        if (user.role == 'mess_committee')
+          _buildModernListTile(
+            context: context, 
+            icon: Icons.people_alt_rounded,
+            color: Colors.indigo,
+            title: "Manage Users",
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const UserManagementScreen())),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildMealsSection(BuildContext context) {
+    return Column(
+      children: [
+        _buildModernListTile(
+          context: context, 
+          icon: Icons.receipt_long_rounded,
+          color: Colors.orange,
+          title: "Daily Meal List",
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MealListScreen())),
+        ),
+        // --- 2. NEW BUTTON ADDED ---
+        _buildModernListTile(
+          context: context, 
+          icon: Icons.history_rounded, // New icon
+          color: Colors.cyan, // New color
+          title: "My Booking History",
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MyBookingsScreen())),
+        ),
+        _buildModernListTile(
+          context: context, 
+          icon: Icons.star_outline_rounded,
+          color: Colors.teal,
+          title: "Rate Your Meal", // <--- This button
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => FeedbackScreen())), // <--- Opens FeedbackScreen
+),
+      ],
+    );
+  }
+
+  Widget _buildPreferencesSection(BuildContext context, ThemeData theme, User user) {
+    return Column(
+      children: [
+        _buildModernListTile(
+          context: context, 
+          icon: Icons.lock_outline_rounded,
+          color: Colors.blueGrey,
+          title: "Reset Password",
+          onTap: () => _showResetPasswordConfirmation(context, user),
+        ),
+        // Theme Toggle Integration
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.dark_mode_outlined, color: Colors.blue),
+              ),
+              const SizedBox(width: 16),
+              const Text(
+                "Dark Mode",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              ),
+              const Spacer(),
+              _buildThemeToggleSwitch(context),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // --- 2. SQUIRCLE LIST TILE ---
+  Widget _buildModernListTile({
+    required BuildContext context,
+    required IconData icon,
+    required Color color,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+        child: Row(
+          children: [
+            // The Squircle
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 22),
+            ),
+            const SizedBox(width: 16),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const Spacer(),
+            Icon(Icons.chevron_right_rounded, color: Colors.grey.shade400, size: 20),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildUserInfoSection(BuildContext context, ThemeData theme, User user) { // Added context
-    final isDarkMode = theme.brightness == Brightness.dark;
-
-    // --- WRAPPED IN STACK ---
-    return Stack(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: theme.cardTheme.color,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4))
-            ],
-          ),
-          child: Column(
-            children: [
-              // --- UPDATED AVATAR WIDGET ---
-              Container(
-                width: 90,
-                height: 90,
-                decoration: isDarkMode
-                    ? BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          colors: [
-                            theme.colorScheme.primary,
-                            theme.colorScheme.secondary,
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: theme.colorScheme.primary.withOpacity(0.4),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          )
-                        ],
-                      )
-                    : BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: theme.colorScheme.primary.withOpacity(0.1),
-                      ),
-                child: Center(
-                  child: Text(
-                    user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
-                    style: TextStyle(
-                      fontSize: 40,
-                      fontWeight: FontWeight.bold,
-                      color: isDarkMode
-                          ? Colors.white
-                          : theme.colorScheme.primary,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                user.name,
-                style:
-                    theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              _buildRoleChip(theme, user.role ?? 'student'),
-              const Divider(height: 32),
-              _buildInfoRow(theme, Icons.email_outlined, user.email),
-              const SizedBox(height: 12),
-              _buildInfoRow(
-                  theme, Icons.room_outlined, 'Room No: ${user.roomNumber}'),
-            ],
+  // --- 4. MINIMAL LOGOUT BUTTON ---
+  Widget _buildLogoutButton(BuildContext context) {
+    return Center(
+      child: TextButton(
+        onPressed: () => _showLogoutConfirmationDialog(context),
+        child: const Text(
+          "Log Out",
+          style: TextStyle(
+            color: Colors.redAccent,
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
           ),
         ),
-        // --- ADDED EDIT BUTTON ---
-        Positioned(
-          top: 8,
-          right: 8,
-          child: IconButton(
-            icon: Icon(Icons.edit_outlined, color: Colors.grey.shade600),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const EditProfileScreen()),
-              );
-            },
-            tooltip: 'Edit Profile',
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRoleChip(ThemeData theme, String role) {
-    Color chipColor;
-    switch (role) {
-      case 'convenor':
-        chipColor = Colors.amber.shade700;
-        break;
-      case 'mess_committee':
-        chipColor = Colors.red.shade600;
-        break;
-      default:
-        chipColor = Colors.green.shade600;
-    }
-    return Chip(
-      label: Text(
-        role.replaceAll('_', ' ').toUpperCase(),
-        style: const TextStyle(
-            color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
-      ),
-      backgroundColor: chipColor,
-      padding: const EdgeInsets.symmetric(horizontal: 12.0),
-    );
-  }
-
-  Widget _buildInfoRow(ThemeData theme, IconData icon, String text) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(icon, color: Colors.grey.shade600, size: 20),
-        const SizedBox(width: 8),
-        Text(text, style: TextStyle(fontSize: 16, color: Colors.grey.shade700)),
-      ],
-    );
-  }
-
-  Widget _buildAdminPanel(ThemeData theme, BuildContext context, User user) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: theme.cardTheme.color,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4))
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text("Admin Panel",
-              style: theme.textTheme.titleLarge
-                  ?.copyWith(fontWeight: FontWeight.bold)),
-          const Divider(height: 24),
-          if (user.role == 'convenor')
-            _buildProfileButton(
-              context,
-              icon: Icons.edit_calendar_outlined,
-              text: 'Set Daily Menu',
-              onTap: () => Navigator.push(
-                  context, MaterialPageRoute(builder: (_) => SetMenuScreen())),
-            ),
-          // --- MOVED TO _buildMealsSection ---
-          // _buildProfileButton(
-          //   context,
-          //   icon: Icons.list_alt_outlined,
-          //   text: 'View Daily Meal List',
-          //   onTap: () => Navigator.push(context,
-          //       MaterialPageRoute(builder: (_) => const MealListScreen())),
-          // ),
-          _buildProfileButton(
-            context,
-            icon: Icons.post_add_outlined,
-            text: 'Post a New Notice',
-            onTap: () => Navigator.push(
-                context, MaterialPageRoute(builder: (_) => PostNoticeScreen())),
-          ),
-          if (user.role == 'mess_committee') ...[
-            _buildProfileButton(
-              context,
-              icon: Icons.people_outline,
-              text: 'Manage Users',
-              onTap: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const UserManagementScreen())),
-            ),
-          ]
-        ],
       ),
     );
   }
 
-  // --- NEW MEALS SECTION ---
-  Widget _buildMealsSection(BuildContext context, ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: theme.cardTheme.color,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4))
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text("Meals",
-              style: theme.textTheme.titleLarge
-                  ?.copyWith(fontWeight: FontWeight.bold)),
-          const Divider(height: 24),
-          _buildProfileButton(
-            context,
-            icon: Icons.list_alt_outlined,
-            text: 'View Daily Meal List',
-            onTap: () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const MealListScreen())),
-          ),
-          _buildProfileButton(
-            context,
-            icon: Icons.star_border_outlined,
-            text: 'Rate Your Meal',
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Coming Soon!'),
-                  backgroundColor: Colors.blue,
-                ),
-              );
-            },
-          ),
-          _buildProfileButton(
-            context,
-            icon: Icons.stars_outlined,
-            text: 'My Ratings',
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Coming Soon!'),
-                  backgroundColor: Colors.blue,
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
+  // --- HELPER WIDGETS ---
 
-  Widget _buildAccountSettings(
-      BuildContext context, ThemeData theme, User user) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: theme.cardTheme.color,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4))
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text("Account Settings",
-              style: theme.textTheme.titleLarge
-                  ?.copyWith(fontWeight: FontWeight.bold)),
-          const Divider(height: 24),
-          _buildProfileButton(
-            context,
-            icon: Icons.lock_reset_outlined,
-            text: 'Reset Password',
-            onTap: () => _showResetPasswordConfirmation(context, user),
-          ),
-          const SizedBox(height: 8),
-          _buildThemeToggle(context), // The new theme toggle
-        ],
-      ),
-    );
-  }
-
-  // NEW WIDGET: The innovative and animated theme toggle switch
-  Widget _buildThemeToggle(BuildContext context) {
+  Widget _buildThemeToggleSwitch(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDarkMode = themeProvider.themeMode == ThemeMode.dark;
-    final theme = Theme.of(context);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.color_lens_outlined,
-                color: theme.colorScheme.primary,
-              ),
-              const SizedBox(width: 16),
-              Text(
-                'Dark Mode',
-                style:
-                    theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w500),
-              ),
-            ],
-          ),
-          GestureDetector(
-            onTap: () => themeProvider.toggleTheme(),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 400),
-              width: 60,
-              height: 34,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                color: isDarkMode
-                    ? Colors.blueGrey.shade700
-                    : Colors.lightBlue.shade100,
-              ),
-              child: AnimatedAlign(
-                alignment:
-                    isDarkMode ? Alignment.centerRight : Alignment.centerLeft,
-                duration: const Duration(milliseconds: 400),
-                curve: Curves.fastOutSlowIn,
-                child: Padding(
-                  padding: const EdgeInsets.all(4.0),
-                  child: Container(
-                    width: 26,
-                    height: 26,
-                    decoration: const BoxDecoration(
-                        shape: BoxShape.circle, color: Colors.white),
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 400),
-                      transitionBuilder: (child, animation) {
-                        return RotationTransition(
-                          turns: child.key == const ValueKey('moon_icon')
-                              ? Tween<double>(begin: 0.5, end: 1)
-                                  .animate(animation)
-                              : Tween<double>(begin: 0.75, end: 1)
-                                  .animate(animation),
-                          child:
-                              FadeTransition(opacity: animation, child: child),
-                        );
-                      },
-                      child: isDarkMode
-                          ? Icon(Icons.nightlight_round,
-                              color: Colors.blueGrey.shade700,
-                              size: 18,
-                              key: const ValueKey('moon_icon'))
-                          : Icon(Icons.wb_sunny_rounded,
-                              color: Colors.orangeAccent,
-                              size: 18,
-                              key: const ValueKey('sun_icon')),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+    return Switch.adaptive(
+      value: isDarkMode,
+      activeColor: Colors.blue,
+      onChanged: (value) => themeProvider.toggleTheme(),
+    );
+  }
+
+  Color _getRoleColor(String? role) {
+    switch (role) {
+      case 'convenor': return Colors.amber.shade800;
+      case 'mess_committee': return Colors.red.shade600;
+      default: return Colors.blue.shade600;
+    }
+  }
+
+  void _showComingSoon(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Feature coming soon!'), behavior: SnackBarBehavior.floating),
     );
   }
 
@@ -413,45 +456,25 @@ class ProfileScreen extends StatelessWidget {
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('Confirm Password Reset'),
-          content: const Text(
-              'A password reset token will be sent to your registered email. Do you want to continue?'),
+          title: const Text('Reset Password'),
+          content: const Text('Send a password reset token to your email?'),
           actions: [
+            TextButton(child: const Text('Cancel'), onPressed: () => Navigator.pop(dialogContext)),
             TextButton(
-              child: const Text('Cancel'),
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-              },
-            ),
-            TextButton(
-              child: const Text('Confirm', style: TextStyle(color: Colors.red)),
+              child: const Text('Send', style: TextStyle(color: Colors.blue)),
               onPressed: () async {
-                Navigator.of(dialogContext).pop();
-                final authProvider =
-                    Provider.of<AuthProvider>(context, listen: false);
-                final success = await authProvider.forgotPassword(user.email);
-
-                if (!context.mounted) return;
-
-                if (success) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Password reset token sent to your email!'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                        builder: (context) => const ResetPasswordScreen()),
-                  );
-                } else {
+                Navigator.pop(dialogContext);
+                final success = await Provider.of<AuthProvider>(context, listen: false).forgotPassword(user.email);
+                if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(authProvider.errorMessage ??
-                          'Failed to send reset token.'),
-                      backgroundColor: Colors.red,
+                      content: Text(success ? 'Email sent!' : 'Failed to send email.'),
+                      backgroundColor: success ? Colors.green : Colors.red,
                     ),
                   );
+                  if(success) {
+                     Navigator.push(context, MaterialPageRoute(builder: (_) => const ResetPasswordScreen()));
+                  }
                 }
               },
             ),
@@ -461,71 +484,19 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  // --- RENAMED from _buildAdminButton ---
-  Widget _buildProfileButton(BuildContext context,
-      {required IconData icon,
-      required String text,
-      required VoidCallback onTap}) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12.0),
-          child: Row(
-            children: [
-              Icon(icon, color: Theme.of(context).colorScheme.primary),
-              const SizedBox(width: 16),
-              Text(text,
-                  style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w500)),
-              const Spacer(),
-              const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLogoutButton(BuildContext context) {
-    return ElevatedButton.icon(
-      icon: const Icon(Icons.logout),
-      label: const Text('Logout'),
-      onPressed: () {
-        _showLogoutConfirmationDialog(context);
-      },
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.red.shade50,
-        foregroundColor: Colors.red.shade700,
-        elevation: 0,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-      ),
-    );
-  }
-
   void _showLogoutConfirmationDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('Confirm Logout'),
+          title: const Text('Log Out'),
           content: const Text('Are you sure you want to log out?'),
           actions: [
+            TextButton(child: const Text('Cancel'), onPressed: () => Navigator.pop(dialogContext)),
             TextButton(
-              child: const Text('Cancel'),
-              onPressed: () => Navigator.of(dialogContext).pop(),
-            ),
-            TextButton(
-              child: const Text('Logout', style: TextStyle(color: Colors.red)),
+              child: const Text('Log Out', style: TextStyle(color: Colors.red)),
               onPressed: () {
-                // --- FIX: Pop dialog FIRST ---
-                Navigator.of(dialogContext).pop(); 
-                // --- THEN call logout ---
+                Navigator.pop(dialogContext);
                 Provider.of<AuthProvider>(context, listen: false).logout();
               },
             ),
