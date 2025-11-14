@@ -1,15 +1,14 @@
 // lib/screens/booking_screen.dart
 
 import 'package:flutter/material.dart';
-// REMOVED: import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
 import 'package:intl/intl.dart';
-import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import '../provider/booking_provider.dart';
 import '../provider/menu_provider.dart';
-import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import '../provider/auth_provider.dart';
 import '../provider/my_bookings_provider.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:lottie/lottie.dart'; 
 
 class BookingScreen extends StatefulWidget {
   const BookingScreen({Key? key}) : super(key: key);
@@ -19,14 +18,12 @@ class BookingScreen extends StatefulWidget {
 }
 
 class _BookingScreenState extends State<BookingScreen> {
-  late DateTime _selectedDate; // MODIFIED: Initialized in initState
+  late DateTime _selectedDate;
   final Map<String, List<String>> _selectedMeals = {'lunch': [], 'dinner': []};
   bool _isEditing = false;
 
-  // --- NEW: Helper to get the initial date based on time ---
   DateTime _getInitialDate() {
     final now = DateTime.now();
-    // Cutoff time is 9 PM (21:00)
     if (now.hour >= 21) {
       return DateUtils.dateOnly(now.add(const Duration(days: 1)));
     }
@@ -36,7 +33,6 @@ class _BookingScreenState extends State<BookingScreen> {
   @override
   void initState() {
     super.initState();
-    // --- MODIFIED: Use the new helper ---
     _selectedDate = _getInitialDate();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -53,59 +49,60 @@ class _BookingScreenState extends State<BookingScreen> {
       menuProvider.fetchMenuForDate(_selectedDate, forceRefresh: forceRefresh),
       myBookingsProvider.fetchBookingHistory(forceRefresh: forceRefresh),
     ]);
+    
+    if (mounted) {
+      setState(() {
+        _isEditing = false;
+        _selectedMeals['lunch']!.clear();
+        _selectedMeals['dinner']!.clear();
+      });
+    }
   }
 
-  void _onMealSelected(String mealType, String item, bool isSelected) {
+  void _toggleMealSelection(String mealType, String item, bool isSelected) {
     setState(() {
       if (isSelected) {
         _selectedMeals[mealType]!.add(item);
       } else {
         _selectedMeals[mealType]!.remove(item);
       }
+      _isEditing = true; 
     });
   }
 
   Future<void> _selectDate(BuildContext context) async {
-    // --- MODIFIED: Date logic is now dynamic ---
     final now = DateTime.now();
     final firstBookableDate = (now.hour >= 21)
         ? DateUtils.dateOnly(now.add(const Duration(days: 1)))
         : DateUtils.dateOnly(now);
-    // --- END MODIFICATION ---
 
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
-      firstDate: firstBookableDate, // Use dynamic first date
-      lastDate: firstBookableDate.add(const Duration(days: 7)), // 7 days from the first bookable day
+      firstDate: firstBookableDate,
+      lastDate: firstBookableDate.add(const Duration(days: 14)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
-    if (picked != null && picked != _selectedDate) {
+    if (picked != null && !DateUtils.isSameDay(picked, _selectedDate)) {
       setState(() {
         _selectedDate = picked;
-        _isEditing = false;
-        _selectedMeals['lunch']!.clear();
-        _selectedMeals['dinner']!.clear();
       });
-      Provider.of<MenuProvider>(context, listen: false).fetchMenuForDate(picked);
+      _fetchDataForSelectedDate();
     }
   }
 
   void _submitBooking() async {
-    if (_isEditing) {
-      final bool? confirmed = await _showConfirmationDialog(
-        context: context,
-        title: 'Confirm Update',
-        content:
-            'Are you sure you want to update your booking with the new selections?',
-        confirmText: 'Update',
-        confirmColor: Colors.blue,
-      );
-      if (confirmed != true) {
-        return;
-      }
-    }
-
     final bookingProvider = Provider.of<BookingProvider>(context, listen: false);
+    
     bool success = await bookingProvider.submitBooking(
       date: _selectedDate,
       lunchPicks: _selectedMeals['lunch']!,
@@ -116,9 +113,10 @@ class _BookingScreenState extends State<BookingScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(success
-              ? (_isEditing ? 'Booking updated!' : 'Booking confirmed!')
+              ? 'Booking confirmed successfully! ✅'
               : bookingProvider.error ?? 'An error occurred.'),
           backgroundColor: success ? Colors.green : Colors.red,
+          behavior: SnackBarBehavior.floating,
         ),
       );
       if (success) {
@@ -129,14 +127,24 @@ class _BookingScreenState extends State<BookingScreen> {
     }
   }
 
-  void _deleteBooking() async {
-    final bool? confirmed = await _showConfirmationDialog(
+  void _cancelBooking() async {
+    final bool? confirmed = await showDialog<bool>(
       context: context,
-      title: 'Confirm Deletion',
-      content:
-          'Are you sure you want to delete your booking for this date? This action cannot be undone.',
-      confirmText: 'Delete',
-      confirmColor: Colors.red,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Cancel Booking?'),
+        content: const Text('Are you sure you want to cancel meals for this date?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Yes, Cancel', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
     );
 
     if (confirmed == true && mounted) {
@@ -145,10 +153,9 @@ class _BookingScreenState extends State<BookingScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(success
-                ? 'Booking for this date has been deleted.'
-                : 'Failed to delete booking.'),
+            content: Text(success ? 'Booking cancelled.' : 'Failed to cancel.'),
             backgroundColor: success ? Colors.orange : Colors.red,
+            behavior: SnackBarBehavior.floating,
           ),
         );
         if (success) {
@@ -159,631 +166,442 @@ class _BookingScreenState extends State<BookingScreen> {
     }
   }
 
-  Future<bool?> _showConfirmationDialog({
-    required BuildContext context,
-    required String title,
-    required String content,
-    required String confirmText,
-    Color confirmColor = Colors.red,
-  }) {
-    return showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)),
-          title: Text(title),
-          content: Text(content),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
-              onPressed: () {
-                Navigator.of(context).pop(false);
-              },
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: confirmColor,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10.0)),
-              ),
-              child: Text(confirmText),
-              onPressed: () {
-                Navigator.of(context).pop(true);
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final authProvider = Provider.of<AuthProvider>(context);
     final isMessActive = authProvider.user?.isMessActive ?? false;
+    final isDarkMode = theme.brightness == Brightness.dark;
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: Stack(
-        children: [
-          Column(
-            children: [
-              // --- MODIFIED: Using the new date selector ---
-              _buildModernDateSelector(theme),
-              Expanded(
-                // --- REPLACED LiquidPullToRefresh with RefreshIndicator ---
-                child: RefreshIndicator(
-                  onRefresh: () =>
-                      _fetchDataForSelectedDate(forceRefresh: true),
-                  color: theme.colorScheme.primary,
-                  child: Consumer2<MenuProvider, MyBookingsProvider>(
-                    builder:
-                        (context, menuProvider, myBookingsProvider, child) {
-                      if (menuProvider.isLoading ||
-                          myBookingsProvider.isLoading) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      if (menuProvider.error != null) {
-                        return _buildInfoMessage(
-                            lottieAsset: 'assets/not_found.json',
-                            message: menuProvider.error!);
-                      }
-
-                      final existingBooking =
-                          myBookingsProvider.bookingHistory.firstWhere(
-                        (booking) => DateUtils.isSameDay(
-                            booking.bookingDate.toLocal(), _selectedDate),
-                        orElse: () => BookingHistoryItem(
-                            bookingDate: _selectedDate,
-                            lunchPick: null,
-                            dinnerPick: null),
-                      );
-
-                      final bool bookingExists =
-                          existingBooking.lunchPick != null ||
-                              existingBooking.dinnerPick != null;
-
-                      if (bookingExists && !_isEditing) {
-                        // --- MODIFIED: Using the new booked state view ---
-                        return _buildBookedStateView(theme, existingBooking);
-                      } else {
-                        return _buildSelectionStateView(
-                            theme, menuProvider.menu, isMessActive);
-                      }
-                    },
+    // --- FIX: Wrap the Scaffold in a SafeArea ---
+    // This pushes the entire Scaffold (including its bottom nav bar) up
+    // to avoid the main glass nav bar from home_screen.dart
+    return SafeArea(
+      top: false, // The AppBar from home_screen handles top padding
+      bottom: true, // This is the crucial part
+      child: Scaffold(
+        // No solid background, allowing stack to show
+        body: Stack(
+          children: [
+            // --- MODERN BACKGROUND GRADIENT MESH ---
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: isDarkMode 
+                      ? [const Color(0xFF020617), const Color(0xFF0F172A)] // Dark Slate
+                      : [const Color(0xFFF1F5F9), const Color(0xFFE2E8F0)], // Light Slate
                   ),
                 ),
-                // --- END OF REPLACEMENT ---
               ),
-            ],
-          ),
-          if (!isMessActive) _buildInactiveMessOverlay(theme),
-        ],
-      ),
-    );
-  }
+            ),
+            // Accent Orb
+            Positioned(
+              top: -100,
+              left: -50,
+              child: Container(
+                width: 300,
+                height: 300,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: theme.colorScheme.primary.withOpacity(isDarkMode ? 0.1 : 0.05),
+                  boxShadow: [
+                    BoxShadow(
+                      color: theme.colorScheme.primary.withOpacity(isDarkMode ? 0.1 : 0.05),
+                      blurRadius: 100,
+                      spreadRadius: 50,
+                    )
+                  ]
+                ),
+              ),
+            ),
 
-  // --- NEW WIDGET: Modern Date Selector Header ---
-  Widget _buildModernDateSelector(ThemeData theme) {
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primary,
-        borderRadius:
-            const BorderRadius.vertical(bottom: Radius.circular(30.0)),
-        boxShadow: [
-          BoxShadow(
-            color: theme.colorScheme.primary.withOpacity(0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          )
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _selectDate(context),
-          borderRadius:
-              const BorderRadius.vertical(bottom: Radius.circular(30.0)),
-          child: Padding(
-            padding:
-                const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 28.0), // More padding
-            child: SafeArea(
-              bottom: false, // SafeArea is only for the top
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            // --- FIX: Removed the old SafeArea wrapper from here ---
+            RefreshIndicator(
+              onRefresh: () => _fetchDataForSelectedDate(forceRefresh: true),
+              child: Column(
                 children: [
-                  Flexible(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'BOOKING FOR',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.1,
+                  _buildModernDateHeader(theme),
+                  Expanded(
+                    child: Consumer2<MenuProvider, MyBookingsProvider>(
+                      builder: (context, menuProvider, myBookingsProvider, child) {
+                        if (menuProvider.isLoading || myBookingsProvider.isLoading) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
+
+                        // Find existing booking for this date
+                        final existingBooking = myBookingsProvider.bookingHistory.firstWhere(
+                          (b) => DateUtils.isSameDay(b.bookingDate.toLocal(), _selectedDate),
+                          orElse: () => BookingHistoryItem(bookingDate: _selectedDate),
+                        );
+
+                        final bool isBooked = (existingBooking.lunchPick?.isNotEmpty ?? false) ||
+                                              (existingBooking.dinnerPick?.isNotEmpty ?? false);
+
+                        if (!_isEditing && isBooked) {
+                          _selectedMeals['lunch'] = List.from(existingBooking.lunchPick ?? []);
+                          _selectedMeals['dinner'] = List.from(existingBooking.dinnerPick ?? []);
+                        }
+
+                        if (menuProvider.menu == null) {
+                          return _buildEmptyState(theme);
+                        }
+
+                        return SingleChildScrollView(
+                          // --- FIX: Removed manual bottom padding ---
+                          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: AnimationLimiter(
+                            child: Column(
+                              children: AnimationConfiguration.toStaggeredList(
+                                duration: const Duration(milliseconds: 400),
+                                childAnimationBuilder: (widget) => SlideAnimation(
+                                  verticalOffset: 50.0,
+                                  child: FadeInAnimation(child: widget),
+                                ),
+                                children: [
+                                  _buildModernMealCard(
+                                    theme, 
+                                    title: 'Lunch',
+                                    icon: Icons.wb_sunny_rounded,
+                                    gradientColors: [const Color(0xFFFF9966), const Color(0xFFFF5E62)], // Orange Gradient
+                                    shadowColor: Colors.orange.withOpacity(0.3),
+                                    menuItems: menuProvider.menu!.lunchOptions, 
+                                    selectedItems: _selectedMeals['lunch']!,
+                                    isBooked: existingBooking.lunchPick?.isNotEmpty ?? false,
+                                    mealType: 'lunch'
+                                  ),
+                                  const SizedBox(height: 24),
+                                  _buildModernMealCard(
+                                    theme, 
+                                    title: 'Dinner',
+                                    icon: Icons.nights_stay_rounded,
+                                    gradientColors: [const Color(0xFF4568DC), const Color(0xFFB06AB3)], // Purple Gradient
+                                    shadowColor: Colors.blue.withOpacity(0.3),
+                                    menuItems: menuProvider.menu!.dinnerOptions, 
+                                    selectedItems: _selectedMeals['dinner']!,
+                                    isBooked: existingBooking.dinnerPick?.isNotEmpty ?? false,
+                                    mealType: 'dinner'
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          DateFormat('EEEE, d MMMM').format(_selectedDate),
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
+                        );
+                      },
                     ),
                   ),
-                  const Icon(Icons.calendar_month_outlined,
-                      color: Colors.white, size: 28),
                 ],
               ),
             ),
-          ),
+          ],
         ),
-      ),
-    );
-  }
-  // --- END OF NEW WIDGET ---
-
-  Widget _buildBookedStateView(ThemeData theme, BookingHistoryItem booking) {
-    final lunchItems = booking.lunchPick ?? [];
-    final dinnerItems = booking.dinnerPick ?? [];
-
-    return SingleChildScrollView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
-      child: Column(
-        children: [
-          // --- MODIFIED: Using the new booked card ---
-          _buildBookedMealCard(
-              theme, 'Lunch', Icons.wb_sunny_outlined, lunchItems),
-          const SizedBox(height: 20),
-          _buildBookedMealCard(
-              theme, 'Dinner', Icons.nightlight_round_outlined, dinnerItems),
-          const SizedBox(height: 24),
-          _buildBookedActionButtons(theme, booking),
-        ],
+        bottomNavigationBar: isMessActive ? _buildBottomActionBar(theme) : null,
       ),
     );
   }
 
-  // --- NEW WIDGET: Redesigned "Booked" Card ---
-  Widget _buildBookedMealCard(
-      ThemeData theme, String title, IconData icon, List<String> items) {
+  // --- 1. Modern Glass-like Date Header ---
+  Widget _buildModernDateHeader(ThemeData theme) {
     final isDarkMode = theme.brightness == Brightness.dark;
-    bool isBooked = items.isNotEmpty;
-
-    // Define colors for lunch/dinner
-    LinearGradient headerGradient;
-    Color iconColor;
-    if (title == 'Lunch') {
-      headerGradient = isDarkMode
-          ? LinearGradient(colors: [
-              Colors.orange.shade700,
-              Colors.orange.shade500,
-            ])
-          : const LinearGradient(colors: [Color(0xFFFFB347), Color(0xFFFFCC33)]);
-      iconColor = isDarkMode ? Colors.orange.shade200 : Colors.orange.shade800;
-    } else {
-      headerGradient = isDarkMode
-          ? LinearGradient(
-              colors: [Colors.deepPurple.shade700, Colors.deepPurple.shade900])
-          : const LinearGradient(colors: [Color(0xFF6A11CB), Color(0xFF2575FC)]);
-      iconColor = isDarkMode ? Colors.purple.shade200 : Colors.indigo.shade800;
-    }
-
-    return Card(
-      elevation: 6.0,
-      shadowColor:
-          (title == 'Lunch' ? Colors.orange : Colors.indigo).withOpacity(0.2),
-      clipBehavior: Clip.antiAlias, // Ensures content respects the border radius
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Card Header
-          Container(
-            decoration: BoxDecoration(
-              gradient: headerGradient,
-            ),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
-            child: Row(
-              children: [
-                Icon(icon, color: Colors.white, size: 28),
-                const SizedBox(width: 12),
-                Text(
-                  title,
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    shadows: [
-                      Shadow(
-                        blurRadius: 4.0,
-                        color: Colors.black.withOpacity(0.3),
-                        offset: const Offset(1.0, 1.0),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
+      child: GestureDetector(
+        onTap: () => _selectDate(context),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: theme.cardTheme.color,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 15,
+                offset: const Offset(0, 5),
+              )
+            ],
+            border: Border.all(
+              color: isDarkMode ? Colors.white.withOpacity(0.1) : Colors.white,
+              width: 1
+            )
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.calendar_today_rounded, 
+                        color: theme.colorScheme.primary, size: 22),
+                  ),
+                  const SizedBox(width: 16),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        DateFormat('MMMM d, y').format(_selectedDate),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 1.0
+                        ),
+                      ),
+                      Text(
+                        DateFormat('EEEE').format(_selectedDate),
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20,
+                        ),
                       ),
                     ],
                   ),
-                ),
-              ],
-            ),
-          ),
-          // Card Content
-          Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: isBooked
-                ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: items
-                        .map((item) => _buildBookedItemRow(theme, item))
-                        .toList(),
-                  )
-                : const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 10.0),
-                    child: Text(
-                      'No meal selected for this slot.',
-                      style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey,
-                          fontStyle: FontStyle.italic),
-                    ),
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // --- NEW WIDGET: Helper for "Booked" Card Item ---
-  Widget _buildBookedItemRow(ThemeData theme, String item) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.check_circle, color: Colors.green.shade400, size: 20),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              item,
-              style:
-                  theme.textTheme.bodyLarge?.copyWith(height: 1.4, fontSize: 17),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBookedActionButtons(ThemeData theme, BookingHistoryItem booking) {
-    final isDarkMode = theme.brightness == Brightness.dark;
-    final deleteColor = isDarkMode ? Colors.red.shade300 : Colors.red;
-
-    return Row(
-      children: [
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: _deleteBooking,
-            icon: Icon(Icons.delete_outline, color: deleteColor),
-            label: Text('Delete', style: TextStyle(color: deleteColor)),
-            style: OutlinedButton.styleFrom(
-              side: BorderSide(color: deleteColor),
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30.0)),
-              textStyle:
-                  const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: ElevatedButton.icon(
-            onPressed: () {
-              setState(() {
-                _selectedMeals['lunch'] =
-                    List<String>.from(booking.lunchPick ?? []);
-                _selectedMeals['dinner'] =
-                    List<String>.from(booking.dinnerPick ?? []);
-                _isEditing = true;
-              });
-            },
-            icon: const Icon(Icons.edit_outlined),
-            label: const Text('Update'),
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              textStyle:
-                  const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30.0)),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSelectionStateView(
-      ThemeData theme, DailyMenu? menu, bool isMessActive) {
-    if (menu == null) {
-      return _buildInfoMessage(
-          lottieAsset: 'assets/no-food.json',
-          message: "No menu is set for this day.");
-    }
-    final bool isMealSelected = _selectedMeals['lunch']!.isNotEmpty ||
-        _selectedMeals['dinner']!.isNotEmpty;
-    final isDarkMode = theme.brightness == Brightness.dark;
-    final lunchIconColor = isDarkMode ? theme.colorScheme.primary : Colors.orange;
-    final dinnerIconColor =
-        isDarkMode ? Colors.deepPurple.shade300 : Colors.indigo;
-
-    return Column(
-      children: [
-        Expanded(
-          child: AnimationLimiter(
-            child: ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
-              children: AnimationConfiguration.toStaggeredList(
-                duration: const Duration(milliseconds: 400),
-                childAnimationBuilder: (widget) => SlideAnimation(
-                    verticalOffset: 50.0, child: FadeInAnimation(child: widget)),
-                children: [
-                  _buildMealSelectionCard(theme, 'Lunch',
-                      Icons.wb_sunny_outlined, lunchIconColor, menu.lunchOptions, 'lunch'),
-                  const SizedBox(height: 20),
-                  _buildMealSelectionCard(theme, 'Dinner',
-                      Icons.nightlight_round_outlined, dinnerIconColor, menu.dinnerOptions, 'dinner'),
                 ],
               ),
-            ),
+              Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.grey.shade400),
+            ],
           ),
         ),
-        if (isMealSelected || _isEditing)
-          _buildSelectionActionButtons(isMessActive),
-      ],
+      ),
     );
   }
 
-  Widget _buildMealSelectionCard(ThemeData theme, String title, IconData icon,
-      Color color, List<String> options, String mealType) {
+  // --- 2. Modern Gradient Meal Card ---
+  Widget _buildModernMealCard(
+    ThemeData theme, {
+    required String title,
+    required IconData icon,
+    required List<Color> gradientColors,
+    required Color shadowColor,
+    required List<String> menuItems,
+    required List<String> selectedItems,
+    required bool isBooked,
+    required String mealType,
+  }) {
+    final bool hasSelection = selectedItems.isNotEmpty;
     final isDarkMode = theme.brightness == Brightness.dark;
 
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20.0),
+        borderRadius: BorderRadius.circular(24),
         color: theme.cardTheme.color,
-        gradient: isDarkMode
-            ? LinearGradient(
-                colors: [
-                  color.withOpacity(0.1),
-                  theme.cardTheme.color!,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              )
-            : null,
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4))
+            color: hasSelection || isBooked ? shadowColor : Colors.black.withOpacity(0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          )
         ],
+        border: Border.all(
+          color: hasSelection || isBooked ? gradientColors.last : Colors.transparent,
+          width: 1.5,
+        ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Icon(icon, color: color, size: 28),
-                const SizedBox(width: 12),
-                Text(
-                  title,
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: isDarkMode
-                        ? color
-                        : theme.textTheme.headlineSmall?.color,
-                  ),
+            // Header with Gradient
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    gradientColors.first.withOpacity(0.1),
+                    gradientColors.last.withOpacity(0.2),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-              ],
-            ),
-            const Divider(height: 24),
-            if (options.isNotEmpty)
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: 200,
-                  childAspectRatio: 3,
-                  mainAxisSpacing: 10,
-                  crossAxisSpacing: 10,
-                ),
-                itemCount: options.length,
-                itemBuilder: (context, index) {
-                  final item = options[index];
-                  final isSelected = _selectedMeals[mealType]!.contains(item);
-                  return _buildMealGridItem(theme, item, isSelected,
-                      (bool? value) {
-                    _onMealSelected(mealType, item, value ?? false);
-                  });
-                },
-              )
-            else
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 20.0),
-                child: Center(
-                    child: Text("No menu set for this meal.",
-                        style: TextStyle(fontSize: 16, color: Colors.grey))),
               ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Icon(icon, color: gradientColors.last, size: 24),
+                      const SizedBox(width: 12),
+                      Text(title, style: TextStyle(
+                        fontWeight: FontWeight.w900, 
+                        fontSize: 18,
+                        color: gradientColors.last,
+                        letterSpacing: 0.5
+                      )),
+                    ],
+                  ),
+                  if (isBooked)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.green),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.check_circle, size: 14, color: Colors.green),
+                          SizedBox(width: 4),
+                          Text("BOOKED", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.green)),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            // Items
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: menuItems.isEmpty 
+                ? Center(child: Text("No menu set.", style: TextStyle(color: Colors.grey.shade400, fontStyle: FontStyle.italic)))
+                : Column(
+                    children: menuItems.map((item) {
+                      final bool itemSelected = selectedItems.contains(item);
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        margin: const EdgeInsets.only(bottom: 10),
+                        decoration: BoxDecoration(
+                          color: itemSelected 
+                              ? gradientColors.last.withOpacity(isDarkMode ? 0.2 : 0.1) 
+                              : theme.scaffoldBackgroundColor,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: itemSelected ? gradientColors.last : Colors.transparent
+                          )
+                        ),
+                        child: ListTile(
+                          onTap: () => _toggleMealSelection(mealType, item, !itemSelected),
+                          leading: Icon(
+                            itemSelected ? Icons.check_circle : Icons.circle_outlined,
+                            color: itemSelected ? gradientColors.last : Colors.grey.shade400,
+                          ),
+                          title: Text(
+                            item,
+                            style: TextStyle(
+                              fontWeight: itemSelected ? FontWeight.bold : FontWeight.normal,
+                              color: itemSelected ? gradientColors.last : theme.textTheme.bodyLarge?.color,
+                            ),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildMealGridItem(ThemeData theme, String item, bool isSelected,
-      ValueChanged<bool?> onChanged) {
-    return GestureDetector(
-      onTap: () => onChanged(!isSelected),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? theme.colorScheme.primary.withOpacity(0.1)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-              color: isSelected
-                  ? theme.colorScheme.primary
-                  : Colors.grey.shade300),
-        ),
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Text(
-              item,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: isSelected
-                    ? theme.colorScheme.primary
-                    : theme.textTheme.bodyLarge?.color,
+  // --- 3. Lottie Empty State ---
+  Widget _buildEmptyState(ThemeData theme) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Lottie.asset(
+              'assets/no-food.json', 
+              width: 220,
+              height: 220,
+              fit: BoxFit.contain,
+            ),
+            const SizedBox(height: 24),
+            Text(
+              "Menu Not Published",
+              style: theme.textTheme.headlineSmall?.copyWith(
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.bold
               ),
             ),
-          ),
+            const SizedBox(height: 8),
+            const Text(
+              "The mess convener hasn't updated the menu for this date yet. Please check back later.",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildSelectionActionButtons(bool isMessActive) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
+  // --- 4. Floating Action Bar ---
+  Widget _buildBottomActionBar(ThemeData theme) {
+    final bookingProvider = Provider.of<BookingProvider>(context);
+    final history = Provider.of<MyBookingsProvider>(context).bookingHistory;
+    final hasBooking = history.any((b) => 
+      DateUtils.isSameDay(b.bookingDate.toLocal(), _selectedDate) && 
+      ((b.lunchPick?.isNotEmpty ?? false) || (b.dinnerPick?.isNotEmpty ?? false))
+    );
+
+    final bool hasSelections = _selectedMeals['lunch']!.isNotEmpty || _selectedMeals['dinner']!.isNotEmpty;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, -5))
+        ],
+      ),
       child: Row(
         children: [
-          if (_isEditing)
+          if (hasBooking)
             Expanded(
               child: OutlinedButton(
-                onPressed: () => setState(() => _isEditing = false),
-                child: const Text('Cancel Update'),
+                onPressed: _cancelBooking,
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30.0)),
-                  textStyle: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold),
+                  side: const BorderSide(color: Colors.red),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
+                child: const Text("Cancel", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
               ),
             ),
-          if (_isEditing) const SizedBox(width: 16),
+          if (hasBooking) const SizedBox(width: 16),
           Expanded(
-            child: Consumer<BookingProvider>(
-              builder: (context, provider, child) => ElevatedButton.icon(
-                onPressed:
-                    isMessActive && !provider.isSubmitting ? _submitBooking : null,
-                icon: const Icon(Icons.check_circle_outline),
-                label: provider.isSubmitting
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white))
-                    : Text(_isEditing ? 'Update' : 'Confirm'),
+            flex: 2,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                gradient: LinearGradient(
+                  colors: (hasSelections || _isEditing) && !bookingProvider.isSubmitting
+                      ? [theme.colorScheme.primary, const Color(0xFFE100FF)] // Active Gradient
+                      : [Colors.grey, Colors.grey],
+                ),
+                boxShadow: (hasSelections || _isEditing) 
+                    ? [BoxShadow(color: theme.colorScheme.primary.withOpacity(0.4), blurRadius: 10, offset: const Offset(0, 4))]
+                    : [],
+              ),
+              child: ElevatedButton(
+                onPressed: (hasSelections || _isEditing) && !bookingProvider.isSubmitting 
+                    ? _submitBooking 
+                    : null,
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  backgroundColor:
-                      _isEditing ? theme.colorScheme.primary : Colors.green,
-                  foregroundColor: Colors.white,
-                  textStyle: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30.0)),
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
+                child: bookingProvider.isSubmitting
+                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : Text(hasBooking ? "Update Booking" : "Confirm Booking", 
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
               ),
             ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildInactiveMessOverlay(ThemeData theme) {
-    return Container(
-      color: Colors.black.withOpacity(0.5),
-      child: Center(
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          margin: const EdgeInsets.symmetric(horizontal: 32),
-          decoration: BoxDecoration(
-            color: theme.cardTheme.color,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10)
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.no_food, size: 60, color: Colors.red.shade400),
-              const SizedBox(height: 20),
-              Text('Your Mess is Inactive',
-                  style: Theme.of(context)
-                      .textTheme
-                      .headlineSmall
-                      ?.copyWith(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 12),
-              const Text(
-                  'Please contact the mess committee for assistance.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16, color: Colors.grey)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoMessage(
-      {required String lottieAsset, required String message}) {
-    return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      children: [
-        SizedBox(
-          height: MediaQuery.of(context).size.height * 0.6,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Lottie.asset(
-                lottieAsset,
-                width: 250,
-              ),
-              const SizedBox(height: 20),
-              Text(
-                message,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.grey.shade600,
-                    fontWeight: FontWeight.w500),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }

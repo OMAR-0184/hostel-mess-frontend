@@ -2,28 +2,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-// REMOVED: import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import '../provider/auth_provider.dart';
 import '../provider/notice_provider.dart';
-
-// Light theme palettes (Background and Accent)
-const List<Color> _lightCardColors = [
-  Color(0xFFE7F3FF), Color(0xFFE5F8ED), Color(0xFFFFF4E5), Color(0xFFF3E5F9), Color(0xFFE0F7FA)
-];
-const List<Color> _lightAccentColors = [
-  Color(0xFF4A90E2), Color(0xFF50E3C2), Color(0xFFF5A623), Color(0xFF9013FE), Color(0xFF00ACC1)
-];
-
-// Dark theme palettes (Background and Accent)
-const List<Color> _darkCardColors = [
-  Color(0xFF2A2D3A), Color(0xFF2B3A3B), Color(0xFF39322E), Color(0xFF3A2F4B), Color(0xFF2C3E4A)
-];
-const List<Color> _darkAccentColors = [
-  Color(0xFF8AB4F8), Color(0xFF81C995), Color(0xFFFDD663), Color(0xFFC58AF9), Color(0xFF78D9EC)
-];
-
 
 class NoticeScreen extends StatefulWidget {
   const NoticeScreen({Key? key}) : super(key: key);
@@ -52,10 +34,10 @@ class _NoticeScreenState extends State<NoticeScreen> {
       builder: (BuildContext context) {
         return AlertDialog(
           shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: const Text('Delete Notice?'),
           content: Text(
-              'Are you sure you want to delete the notice titled "${notice.title}"? This action cannot be undone.'),
+              'Are you sure you want to delete the notice "${notice.title}"?'),
           actions: [
             TextButton(
               child: const Text('Cancel'),
@@ -92,67 +74,60 @@ class _NoticeScreenState extends State<NoticeScreen> {
     final user = Provider.of<AuthProvider>(context).user;
     final bool isAdmin =
         user?.role == 'convenor' || user?.role == 'mess_committee';
-    final bool isDarkMode = theme.brightness == Brightness.dark;
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: Consumer<NoticeProvider>(
-        builder: (context, noticeProvider, child) {
-          if (noticeProvider.isLoading && noticeProvider.notices.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (noticeProvider.notices.isEmpty) {
-            return _buildInfoMessage(
-              icon: Icons.notifications_off_outlined,
-              message: 'No notices have been posted yet.',
-            );
-          }
-          // --- REPLACED LiquidPullToRefresh with RefreshIndicator ---
-          return RefreshIndicator(
-            onRefresh: _refreshNotices,
-            color: theme.colorScheme.primary,
-            child: AnimationLimiter(
-              child: ListView.builder(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(12.0),
-                itemCount: noticeProvider.notices.length,
-                itemBuilder: (BuildContext context, int index) {
-                  final notice = noticeProvider.notices[index];
-                  // Cycle through the color palettes for each card.
-                  final cardColor = isDarkMode
-                      ? _darkCardColors[index % _darkCardColors.length]
-                      : _lightCardColors[index % _lightCardColors.length];
-                  final accentColor = isDarkMode
-                      ? _darkAccentColors[index % _darkAccentColors.length]
-                      : _lightAccentColors[index % _lightAccentColors.length];
+    // --- FIX: Wrapped in SafeArea (and removed bottom: false) ---
+    return SafeArea(
+      child: Container( 
+        color: theme.scaffoldBackgroundColor,
+        child: Consumer<NoticeProvider>(
+          builder: (context, noticeProvider, child) {
+            if (noticeProvider.isLoading && noticeProvider.notices.isEmpty) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (noticeProvider.notices.isEmpty) {
+              return _buildInfoMessage(
+                theme,
+                icon: Icons.notifications_none_rounded,
+                message: 'No notices posted yet.',
+              );
+            }
 
-                  return AnimationConfiguration.staggeredList(
-                    position: index,
-                    duration: const Duration(milliseconds: 400),
-                    child: SlideAnimation(
-                      verticalOffset: 50.0,
-                      child: FadeInAnimation(
-                        child: NoticeCard(
-                          notice: notice,
-                          isAdmin: isAdmin,
-                          cardColor: cardColor,
-                          accentColor: accentColor,
-                          onDelete: () => _showDeleteConfirmationDialog(notice),
+            return RefreshIndicator(
+              onRefresh: _refreshNotices,
+              color: theme.colorScheme.primary,
+              child: AnimationLimiter(
+                child: ListView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  // --- FIX: Removed manual bottom padding ---
+                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),
+                  itemCount: noticeProvider.notices.length, 
+                  itemBuilder: (BuildContext context, int index) {
+                    final notice = noticeProvider.notices[index];
+                    return AnimationConfiguration.staggeredList(
+                      position: index,
+                      duration: const Duration(milliseconds: 500),
+                      child: SlideAnimation(
+                        verticalOffset: 50.0,
+                        child: FadeInAnimation(
+                          child: NoticeCard(
+                            notice: notice,
+                            isAdmin: isAdmin,
+                            onDelete: () => _showDeleteConfirmationDialog(notice),
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-            ),
-          );
-          // --- END OF REPLACEMENT ---
-        },
+            );
+          },
+        ),
       ),
     );
   }
 
-  Widget _buildInfoMessage({required IconData icon, required String message}) {
+  Widget _buildInfoMessage(ThemeData theme, {required IconData icon, required String message}) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -161,7 +136,6 @@ class _NoticeScreenState extends State<NoticeScreen> {
           const SizedBox(height: 20),
           Text(
             message,
-            textAlign: TextAlign.center,
             style: TextStyle(fontSize: 18, color: Colors.grey[600]),
           ),
         ],
@@ -173,16 +147,12 @@ class _NoticeScreenState extends State<NoticeScreen> {
 class NoticeCard extends StatefulWidget {
   final Notice notice;
   final bool isAdmin;
-  final Color cardColor;
-  final Color accentColor;
   final VoidCallback onDelete;
 
   const NoticeCard({
     Key? key,
     required this.notice,
     required this.isAdmin,
-    required this.cardColor,
-    required this.accentColor,
     required this.onDelete,
   }) : super(key: key);
 
@@ -194,179 +164,226 @@ class _NoticeCardState extends State<NoticeCard> {
   bool _isExpanded = false;
 
   bool get isLongNotice {
-    const maxCharsForShortNotice = 120;
+    const maxCharsForShortNotice = 140;
     const maxLinesForShortNotice = 3;
     final lines = widget.notice.content.split('\n');
     return lines.length > maxLinesForShortNotice ||
         widget.notice.content.length > maxCharsForShortNotice;
   }
 
+  String _getRelativeTime(DateTime date) {
+    final now = DateTime.now();
+    final diff = now.difference(date);
+
+    if (diff.inDays > 0) {
+      return '${diff.inDays}d ago';
+    } else if (diff.inHours > 0) {
+      return '${diff.inHours}h ago';
+    } else if (diff.inMinutes > 0) {
+      return '${diff.inMinutes}m ago';
+    } else {
+      return 'Just now';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
-    // Define text colors based on the theme for better readability on custom backgrounds
-    final titleColor = isDarkMode ? Colors.white : Colors.black87;
-    final metadataColor = isDarkMode ? Colors.white70 : Colors.black54;
+
+    final int colorIndex = widget.notice.id % 4;
+    final Color accentColor = [
+      const Color(0xFF7F00FF), // Electric Violet
+      const Color(0xFF00C853), // Teal/Green
+      const Color(0xFFFF6D00), // Coral/Orange
+      const Color(0xFF2962FF), // Blue
+    ][colorIndex];
+
+    final Color cardBackground = isDarkMode
+        ? theme.cardTheme.color!
+        : Colors.white;
 
     return GestureDetector(
       onTap: isLongNotice ? () => setState(() => _isExpanded = !_isExpanded) : null,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16.0),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        margin: const EdgeInsets.only(bottom: 20.0),
         decoration: BoxDecoration(
-          color: widget.cardColor,
-          borderRadius: BorderRadius.circular(15),
+          color: cardBackground,
+          borderRadius: BorderRadius.circular(24),
           boxShadow: [
+            // MODIFICATION: Use a stronger accent shadow in Light Mode
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              spreadRadius: 1,
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+              color: accentColor.withOpacity(isDarkMode ? 0.08 : 0.2), // Increased opacity for light mode
+              blurRadius: isDarkMode ? 20 : 18, // Adjusted blur
+              offset: const Offset(0, 8),
             ),
+            // MODIFICATION: Add a standard subtle shadow for definition in Light Mode
+            if (!isDarkMode)
+               BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
           ],
+          border: Border.all(
+            color: accentColor.withOpacity(isDarkMode ? 0.2 : 0.15), // Slightly more visible border/outline
+            width: 1,
+          ),
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(15),
-          child: IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Container(
-                  width: 6,
-                  color: widget.accentColor,
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16.0, vertical: 20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildCardHeader(theme, titleColor),
-                        const SizedBox(height: 12),
-                        _buildMetadata(theme, metadataColor),
-                        const Divider(height: 24, thickness: 0.5),
-                        _buildContent(theme, titleColor),
-                        if (isLongNotice) _buildExpandToggle(theme),
+          borderRadius: BorderRadius.circular(24),
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        // MODIFICATION: Significantly increased opacity for a colored layer in Light Mode
+                        accentColor.withOpacity(isDarkMode ? 0.05 : 0.15), 
+                        Colors.transparent,
                       ],
                     ),
                   ),
                 ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+              ),
+              Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 18,
+                          backgroundColor: accentColor.withOpacity(0.2),
+                          child: Text(
+                            widget.notice.author.isNotEmpty 
+                                ? widget.notice.author[0].toUpperCase() 
+                                : 'A',
+                            style: TextStyle(
+                              color: accentColor, 
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.notice.author,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: theme.textTheme.titleMedium?.color
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                _getRelativeTime(widget.notice.createdAt.toLocal()),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (widget.isAdmin)
+                          PopupMenuButton<String>(
+                            icon: Icon(Icons.more_vert, color: Colors.grey.shade400),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            onSelected: (value) {
+                              if (value == 'delete') widget.onDelete();
+                            },
+                            itemBuilder: (context) => [
+                              const PopupMenuItem(
+                                value: 'delete',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                                    SizedBox(width: 8),
+                                    Text('Delete', style: TextStyle(color: Colors.red)),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    Text(
+                      widget.notice.title,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
 
-  Widget _buildCardHeader(ThemeData theme, Color titleColor) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Text(
-            widget.notice.title,
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: titleColor,
-            ),
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 300),
+                      alignment: Alignment.topCenter,
+                      curve: Curves.easeInOut,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.notice.content,
+                            maxLines: _isExpanded ? null : 3,
+                            overflow: _isExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              height: 1.6,
+                              color: theme.textTheme.bodyLarge?.color?.withOpacity(0.8),
+                            ),
+                          ),
+                          if (isLongNotice) ...[
+                            const SizedBox(height: 12),
+                            if (!_isExpanded)
+                              ShaderMask(
+                                shaderCallback: (bounds) => LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    accentColor,
+                                    accentColor.withOpacity(0.5)
+                                  ],
+                                ).createShader(bounds),
+                                child: Text(
+                                  "Read more",
+                                  style: TextStyle(
+                                    color: Colors.white, 
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              )
+                            else
+                              Text(
+                                "Show less",
+                                style: TextStyle(
+                                  color: accentColor,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                          ]
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
-        if (widget.isAdmin)
-          SizedBox(
-            width: 36,
-            height: 36,
-            child: IconButton(
-              padding: EdgeInsets.zero,
-              icon: Icon(Icons.delete_outline,
-                  color: Colors.redAccent.withOpacity(0.8)),
-              onPressed: widget.onDelete,
-              tooltip: 'Delete Notice',
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildMetadata(ThemeData theme, Color metadataColor) {
-    final metadataStyle =
-        theme.textTheme.bodySmall?.copyWith(color: metadataColor);
-    return Wrap(
-      spacing: 16.0,
-      runSpacing: 4.0,
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.person_outline, size: 14, color: metadataColor),
-            const SizedBox(width: 6),
-            Text('By ${widget.notice.author}', style: metadataStyle),
-          ],
-        ),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.calendar_today_outlined,
-                size: 14, color: metadataColor),
-            const SizedBox(width: 6),
-            Text(
-              DateFormat('d MMM, yyyy').format(widget.notice.createdAt.toLocal()),
-              style: metadataStyle,
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildContent(ThemeData theme, Color contentColor) {
-    final contentStyle =
-        theme.textTheme.bodyMedium?.copyWith(height: 1.5, color: contentColor);
-    
-    return AnimatedSize(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-      alignment: Alignment.topCenter,
-      child: AnimatedCrossFade(
-        duration: const Duration(milliseconds: 300),
-        crossFadeState:
-            _isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-        firstChild: Text(
-          widget.notice.content,
-          maxLines: 3,
-          overflow: TextOverflow.ellipsis,
-          style: contentStyle,
-        ),
-        secondChild: Text(
-          widget.notice.content,
-          style: contentStyle,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildExpandToggle(ThemeData theme) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 12.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          Text(
-            _isExpanded ? 'Show Less' : 'Show More',
-            style: TextStyle(
-                color: widget.accentColor,
-                fontWeight: FontWeight.bold,
-                fontSize: 14),
-          ),
-          const SizedBox(width: 4),
-          Icon(
-            _isExpanded ? Icons.expand_less : Icons.expand_more,
-            color: widget.accentColor,
-            size: 20,
-          ),
-        ],
       ),
     );
   }

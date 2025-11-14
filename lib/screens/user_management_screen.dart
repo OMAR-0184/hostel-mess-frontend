@@ -20,13 +20,14 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   final TextEditingController _roomFilterController = TextEditingController();
   String _selectedRole = 'All';
   List<User> _filteredUsers = [];
+  // --- (1) MODIFICATION: Added state for expandable filter ---
+  bool _isFilterExpanded = false;
   
   final List<String> _roles = ['All', 'student', 'convenor', 'mess_committee'];
 
   @override
   void initState() {
     super.initState();
-    // Add listeners to all filter inputs
     _searchController.addListener(_filterUsers);
     _roomFilterController.addListener(_filterUsers);
     
@@ -46,7 +47,8 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   void dispose() {
     _searchController.removeListener(_filterUsers);
     _searchController.dispose();
-    _roomFilterController.removeListener(_filterUsers);
+    // --- FIX: Corrected listener removal in dispose ---
+    _roomFilterController.removeListener(_filterUsers); 
     _roomFilterController.dispose();
     super.dispose();
   }
@@ -58,15 +60,10 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     
     setState(() {
       _filteredUsers = adminProvider.users.where((user) {
-        // 1. Name search (from search bar)
         final nameMatches = user.name.toLowerCase().contains(nameQuery);
-
-        // 2. Room filter (from filter sheet)
         final roomMatches = roomQuery.isEmpty
             ? true
             : user.roomNumber.toString().contains(roomQuery);
-
-        // 3. Role filter (from filter sheet)
         final roleMatches = _selectedRole == 'All'
             ? true
             : user.role == _selectedRole;
@@ -78,7 +75,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 
   Future<void> _refreshUsers() async {
     await Provider.of<AdminProvider>(context, listen: false).fetchAllUsers(forceRefresh: true);
-    _filterUsers(); // Re-apply filters after refresh
+    _filterUsers(); 
   }
 
   void _clearFilters() {
@@ -87,7 +84,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     setState(() {
       _selectedRole = 'All';
     });
-    _filterUsers();
+    // No need to call _filterUsers() here as the controllers clearing will trigger it
   }
 
   @override
@@ -100,17 +97,29 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('User Management'),
+        // - Unified Heading Style
+        title: Text('MANAGE USERS', 
+          style: TextStyle(
+            color: theme.colorScheme.primary, 
+            fontSize: 22, 
+            fontWeight: FontWeight.w900, 
+            letterSpacing: 1.2,
+          )
+        ),
+        centerTitle: true,
         backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         foregroundColor: theme.colorScheme.primary,
         actions: [
+          // --- (2) MODIFICATION: Changed filter button action ---
           IconButton(
             icon: Icon(
-              filtersActive ? Icons.filter_alt : Icons.filter_alt_outlined,
+              // Use a different icon when expanded
+              _isFilterExpanded ? Icons.filter_list_off : Icons.filter_list,
               color: filtersActive ? theme.colorScheme.primary : Colors.grey,
             ),
-            onPressed: () => _showFilterSheet(context),
+            // Toggle the expanded state
+            onPressed: () => setState(() => _isFilterExpanded = !_isFilterExpanded),
             tooltip: 'Filter Users',
           )
         ],
@@ -119,14 +128,16 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSearchBar(theme),
+          // --- (3) MODIFICATION: Added new expandable filter card ---
+          _buildFilterCard(theme), 
           Padding(
-            padding: const EdgeInsets.fromLTRB(18.0, 0.0, 16.0, 12.0),
+            padding: const EdgeInsets.fromLTRB(20.0, 12.0, 20.0, 12.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  "Showing ${_filteredUsers.length} of ${adminProvider.users.length} users",
-                  style: theme.textTheme.titleSmall?.copyWith(color: Colors.grey[700]),
+                  "Showing ${_filteredUsers.length} users",
+                  style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[600], fontWeight: FontWeight.bold),
                 ),
                 if (filtersActive || _searchController.text.isNotEmpty)
                   GestureDetector(
@@ -143,7 +154,8 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               ],
             ),
           ),
-          _buildActiveFilterChips(theme),
+          // --- (4) MODIFICATION: Removed old filter chips, they are redundant now ---
+          // _buildActiveFilterChips(theme), // This is no longer needed
           Expanded(
             child: Consumer<AdminProvider>(
               builder: (context, adminProvider, child) {
@@ -156,24 +168,25 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                 if (_filteredUsers.isEmpty) {
                   return _buildInfoMessage(
                     icon: Icons.search_off,
-                    message: 'No users found matching your criteria.',
+                    message: 'No users found.',
                   );
                 }
                 return RefreshIndicator(
                   onRefresh: _refreshUsers,
                   child: AnimationLimiter(
-                    child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                    child: ListView.separated(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                       itemCount: _filteredUsers.length,
+                      separatorBuilder: (ctx, i) => const Divider(height: 1, indent: 70),
                       itemBuilder: (BuildContext context, int index) {
                         final user = _filteredUsers[index];
                         return AnimationConfiguration.staggeredList(
                           position: index,
-                          duration: const Duration(milliseconds: 375),
+                          duration: const Duration(milliseconds: 300),
                           child: SlideAnimation(
-                            verticalOffset: 50.0,
+                            verticalOffset: 30.0,
                             child: FadeInAnimation(
-                              child: _buildUserCard(context, user, theme),
+                              child: _buildUserListTile(context, user, theme),
                             ),
                           ),
                         );
@@ -189,315 +202,315 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     );
   }
 
+  // --- REFINED SEARCH BAR (Floating & Modern) ---
   Widget _buildSearchBar(ThemeData theme) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16.0, 0.0, 16.0, 8.0),
-      child: TextField(
-        controller: _searchController,
-        decoration: InputDecoration(
-          hintText: 'Search by name...',
-          prefixIcon: const Icon(Icons.search),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15.0),
-            borderSide: BorderSide.none,
+      padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 8.0), // Reduced bottom padding
+      child: Container(
+        decoration: BoxDecoration(
+          color: theme.cardTheme.color,
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            )
+          ],
+        ),
+        child: TextField(
+          controller: _searchController,
+          decoration: InputDecoration(
+            hintText: 'Search by name...',
+            prefixIcon: Icon(Icons.search, color: theme.colorScheme.primary),
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            hintStyle: TextStyle(color: Colors.grey.shade500),
           ),
-          filled: true,
-          fillColor: theme.cardTheme.color,
         ),
       ),
     );
   }
 
-  Widget _buildActiveFilterChips(ThemeData theme) {
-    if (_selectedRole == 'All' && _roomFilterController.text.isEmpty) {
-      return const SizedBox.shrink(); // No filters, show nothing
+  // --- (5) NEW WIDGET: Expandable Filter Card (MODERNIZED) ---
+  Widget _buildFilterCard(ThemeData theme) {
+    // Helper to get prefix icon based on role
+    IconData _getRoleIcon(String role) {
+      switch (role) {
+        case 'convenor':
+          return Icons.vpn_key_outlined;
+        case 'mess_committee':
+          return Icons.supervisor_account_outlined;
+        default:
+          return Icons.shield_outlined;
+      }
     }
-    
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Wrap(
-        spacing: 8.0,
-        runSpacing: 4.0,
-        children: [
-          if (_selectedRole != 'All')
-            Chip(
-              label: Text('Role: $_selectedRole'),
-              backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
-              onDeleted: () {
-                setState(() => _selectedRole = 'All');
-                _filterUsers();
-              },
-            ),
-          if (_roomFilterController.text.isNotEmpty)
-            Chip(
-              label: Text('Room: ${_roomFilterController.text}'),
-              backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
-              onDeleted: () {
-                _roomFilterController.clear();
-                _filterUsers();
-              },
-            ),
-        ],
-      ),
-    );
-  }
-  
-  void _showFilterSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (sheetContext) {
-        // Use StatefulBuilder to manage the sheet's internal state
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setSheetState) {
-            return Padding(
-              padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(context).viewInsets.bottom + 20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
+
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      child: Visibility(
+        visible: _isFilterExpanded,
+        child: Container(
+          padding: const EdgeInsets.all(16.0),
+          margin: const EdgeInsets.fromLTRB(16.0, 0.0, 16.0, 8.0),
+          decoration: BoxDecoration(
+            color: theme.cardTheme.color,
+            borderRadius: BorderRadius.circular(15),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              )
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Filter Options",
+                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              Row(
                 children: [
-                  Text('Filter Users', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 24),
-                  // Filter by Role
-                  DropdownButtonFormField<String>(
-                    value: _selectedRole,
-                    decoration: InputDecoration(
-                      labelText: 'Role',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      prefixIcon: const Icon(Icons.security_outlined),
+                  Expanded(
+                    flex: 2,
+                    child: Container(
+                      padding: const EdgeInsets.only(left: 10, right: 10),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                        color: theme.scaffoldBackgroundColor.withOpacity(0.5),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _selectedRole,
+                          isExpanded: true,
+                          style: theme.textTheme.bodyLarge?.copyWith(fontSize: 14),
+                          icon: Icon(Icons.arrow_drop_down_rounded, color: theme.colorScheme.primary),
+                          dropdownColor: theme.cardTheme.color,
+                          items: _roles.map((role) {
+                            return DropdownMenuItem(
+                              value: role,
+                              child: Row(
+                                children: [
+                                  Icon(_getRoleIcon(role), size: 20, color: theme.colorScheme.primary),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    role.replaceAll('_', ' ').toUpperCase(),
+                                    style: TextStyle(fontSize: 14, fontWeight: role == _selectedRole ? FontWeight.bold : FontWeight.normal),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            if (value != null) {
+                              setState(() => _selectedRole = value);
+                              _filterUsers(); 
+                            }
+                          },
+                        ),
+                      ),
                     ),
-                    items: _roles.map((role) {
-                      return DropdownMenuItem(
-                        value: role,
-                        child: Text(role.replaceAll('_', ' ').toUpperCase()),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      if (value != null) {
-                        setSheetState(() {
-                          _selectedRole = value;
-                        });
-                        setState(() {}); // Update main screen state
-                        _filterUsers(); // Re-run filter
-                      }
-                    },
                   ),
-                  const SizedBox(height: 16),
-                  // Filter by Room Number
-                  TextField(
-                    controller: _roomFilterController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: 'Room Number',
-                      hintText: 'Enter room no...',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      prefixIcon: const Icon(Icons.room_outlined),
-                    ),
-                    onChanged: (value) {
-                      _filterUsers(); // Filter as user types
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Done'),
-                      style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 1,
+                    child: TextField(
+                      controller: _roomFilterController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'Room',
+                        hintText: 'No.',
+                        hintStyle: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+                        labelStyle: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: theme.colorScheme.primary, width: 2),
+                        ),
+                        prefixIcon: const Icon(Icons.room_outlined, size: 20),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
+                      ),
+                      style: theme.textTheme.bodyLarge?.copyWith(fontSize: 14),
+                      // No need for onChanged, listener is attached in initState
                     ),
                   ),
                 ],
               ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildUserCard(BuildContext context, User user, ThemeData theme) {
-    final userRole = user.role ?? 'student';
-    final roleColor = _getRoleColor(userRole);
-
-    return Card(
-      color: theme.cardTheme.color,
-      margin: const EdgeInsets.only(bottom: 12.0),
-      elevation: theme.cardTheme.elevation,
-      shadowColor: Colors.black.withOpacity(0.1),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15.0),
-        side: BorderSide(color: theme.dividerColor, width: 1),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 20,
-                  backgroundColor: roleColor.withOpacity(0.15),
-                  child: Text(
-                    user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
-                    style: TextStyle(fontSize: 18, color: roleColor, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(user.name, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 2),
-                      Text(user.email, style: theme.textTheme.bodySmall, overflow: TextOverflow.ellipsis),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const Divider(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildInfoChip(theme, Icons.room_outlined, 'Room: ${user.roomNumber}'),
-                _buildRoleChip(userRole, roleColor),
-              ],
-            ),
-             const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text("Mess Status", style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
-                Transform.scale(
-                  scale: 0.8,
-                  child: Switch(
-                    value: user.isMessActive ?? false,
-                    onChanged: (bool value) async {
-                      final adminProvider = Provider.of<AdminProvider>(context, listen: false);
-                      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-                      final success = await adminProvider.updateUserMessStatus(user.id, value);
-                      if (mounted) {
-                        if (success) {
-                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Mess status updated successfully!'),
-                              backgroundColor: Colors.green,
-                            ),
-                           );
-                           if (user.id == authProvider.user?.id) {
-                              await authProvider.fetchCurrentUser();
-                           }
-                           _refreshUsers(); // Refresh the user list
-                        } else {
-                           ScaffoldMessenger.of(context).showSnackBar(
-                             SnackBar(
-                               content: Text(adminProvider.error ?? 'Failed to update status.'),
-                               backgroundColor: Colors.red,
-                             ),
-                           );
-                        }
-                      }
-                    },
-                  ),
-                )
-              ],
-            ),
-            const SizedBox(height: 8),
-            _buildActionButtons(context, user, theme),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildInfoChip(ThemeData theme, IconData icon, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
+  // --- (6) REMOVED _buildActiveFilterChips ---
+  
+  // --- HIGH DENSITY LIST TILE (Unchanged) ---
+  Widget _buildUserListTile(BuildContext context, User user, ThemeData theme) {
+    final userRole = user.role ?? 'student';
+    final roleColor = _getRoleColor(userRole);
+    final bool isSpecialRole = userRole == 'convenor' || userRole == 'mess_committee';
+
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      // 1. Avatar
+      leading: CircleAvatar(
+        radius: 24,
+        backgroundColor: roleColor.withOpacity(0.1),
+        child: Text(
+          user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
+          style: TextStyle(fontSize: 18, color: roleColor, fontWeight: FontWeight.bold),
+        ),
       ),
-      child: Row(
+      // 2. Title: Name
+      title: Row(
+        children: [
+          Flexible(
+            child: Text(
+              user.name,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (isSpecialRole) ...[
+            const SizedBox(width: 6),
+            // "Mess Committee" Star Indicator
+            Icon(Icons.star_rounded, size: 16, color: roleColor),
+          ]
+        ],
+      ),
+      // 3. Subtitle: Room • Role Chip • Email
+      subtitle: Padding(
+        padding: const EdgeInsets.only(top: 4.0),
+        child: Row(
+          children: [
+            Text(
+              "Room ${user.roomNumber}",
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 13, fontWeight: FontWeight.w500),
+            ),
+            if (isSpecialRole) ...[
+              const SizedBox(width: 8),
+              // Micro-Chip for Role
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: roleColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: roleColor.withOpacity(0.3), width: 0.5),
+                ),
+                child: Text(
+                  userRole == 'mess_committee' ? 'COMMITTEE' : 'CONVENOR',
+                  style: TextStyle(
+                    fontSize: 9, 
+                    fontWeight: FontWeight.bold, 
+                    color: roleColor,
+                    letterSpacing: 0.5
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+      // 4. Trailing: Toggle + Context Menu
+      trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: theme.colorScheme.primary),
-          const SizedBox(width: 6),
-          Text(label, style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.w500)),
+          // Mess Toggle
+          Transform.scale(
+            scale: 0.8,
+            child: Switch(
+              value: user.isMessActive ?? false,
+              activeColor: Colors.green,
+              onChanged: (bool value) async {
+                final adminProvider = Provider.of<AdminProvider>(context, listen: false);
+                final success = await adminProvider.updateUserMessStatus(user.id, value);
+                if (mounted) {
+                  if (success) {
+                     _refreshUsers();
+                  } else {
+                     ScaffoldMessenger.of(context).showSnackBar(
+                       SnackBar(content: Text(adminProvider.error ?? 'Failed to update status.'), backgroundColor: Colors.red),
+                     );
+                  }
+                }
+              },
+            ),
+          ),
+          // Context Menu (The "⋮" Icon)
+          PopupMenuButton<String>(
+            icon: Icon(Icons.more_vert_rounded, color: Colors.grey.shade400),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            onSelected: (value) {
+              if (value == 'role') _showChangeRoleBottomSheet(context, user);
+              // --- (7) MODIFICATION: Call new delete dialog ---
+              if (value == 'delete') _showSecureDeleteUserDialog(context, user); 
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'role',
+                child: Row(
+                  children: [
+                    Icon(Icons.badge_outlined, color: theme.colorScheme.primary, size: 20),
+                    const SizedBox(width: 12),
+                    const Text('Change Role'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                    SizedBox(width: 12),
+                    Text('Delete User', style: TextStyle(color: Colors.red)),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildRoleChip(String role, Color color) {
-    return Chip(
-      label: Text(
-        role.replaceAll('_', ' ').toUpperCase(),
-        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
-      ),
-      backgroundColor: color,
-      padding: const EdgeInsets.symmetric(horizontal: 6.0),
-      visualDensity: VisualDensity.compact,
-    );
-  }
-
-  Widget _buildActionButtons(BuildContext context, User user, ThemeData theme) {
-    final adminProvider = context.watch<AdminProvider>();
-    return Row(
-      children: [
-        Expanded(
-          child: OutlinedButton.icon(
-            icon: const Icon(Icons.edit_outlined, size: 18),
-            label: const Text('Change Role'),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-              foregroundColor: Theme.of(context).colorScheme.primary,
-              side: BorderSide(color: theme.dividerColor),
-            ),
-            onPressed: (adminProvider.isSubmitting ?? false) ? null : () => _showChangeRoleBottomSheet(context, user),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: OutlinedButton.icon(
-            icon: const Icon(Icons.delete_outline, size: 18),
-            label: const Text('Delete'),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-              foregroundColor: Colors.red.shade400,
-              side: BorderSide(color: Colors.red.shade400.withOpacity(0.5)),
-            ),
-            onPressed: (adminProvider.isSubmitting ?? false) ? null : () => _showDeleteUserDialog(context, user),
-          ),
-        ),
-      ],
-    );
-  }
+  // --- (8) REMOVED old _showFilterSheet ---
 
   void _showChangeRoleBottomSheet(BuildContext context, User user) {
     String selectedRole = user.role ?? 'student';
 
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      isScrollControlled: true, // Allow modal to resize with keyboard
       builder: (bottomSheetContext) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setModalState) {
             return Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
+              // Added padding for viewInsets
+              padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(context).viewInsets.bottom + 20),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('Change Role for ${user.name}', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 20),
-                  ..._roles.where((role) => role != 'All').map((role) { // Use the same role list, skip 'All'
+                  ..._roles.where((role) => role != 'All').map((role) { 
                     return RadioListTile<String>(
                       title: Text(role.replaceAll('_', ' ').toUpperCase()),
                       value: role,
@@ -539,35 +552,84 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     );
   }
 
-  void _showDeleteUserDialog(BuildContext context, User user) {
+  // --- (9) MODIFICATION: Secure delete dialog with rounded input ---
+  void _showSecureDeleteUserDialog(BuildContext context, User user) {
+    final TextEditingController deleteConfirmController = TextEditingController();
+    bool isDeleteEnabled = false; // State for the dialog
+
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: const Text('Delete User?'),
-          content: Text('Are you sure you want to delete the user "${user.name}"? This action cannot be undone.'),
-          actions: [
-            TextButton(
-              child: const Text('Cancel'),
-              onPressed: () => Navigator.of(dialogContext).pop(),
-            ),
-            TextButton(
-              child: const Text('Delete', style: TextStyle(color: Colors.red)),
-              onPressed: () async {
-                final adminProvider = Provider.of<AdminProvider>(context, listen: false);
-                Navigator.of(dialogContext).pop();
-                final success = await adminProvider.deleteUser(user.id);
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(success ? 'User deleted successfully!' : adminProvider.error ?? 'Failed to delete user.'),
-                      backgroundColor: success ? Colors.green : Colors.red,
+        // Use StatefulBuilder to manage the dialog's internal state
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Delete User?'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Are you sure you want to delete "${user.name}"? This action cannot be undone.',
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Please type "DELETE" to confirm:',
+                    style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.error),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: deleteConfirmController,
+                    autofocus: true,
+                    decoration: InputDecoration( // Changed to non-const
+                      hintText: 'DELETE',
+                      // MODIFICATION: Added borderRadius to OutlineInputBorder
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10.0), // Rounded input
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     ),
-                  );
-                }
-              },
-            ),
-          ],
+                    onChanged: (value) {
+                      setDialogState(() {
+                        isDeleteEnabled = (value == 'DELETE');
+                      });
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  child: const Text('Cancel'),
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                ),
+                TextButton(
+                  // Enable/disable based on state
+                  onPressed: isDeleteEnabled 
+                    ? () async {
+                        final adminProvider = Provider.of<AdminProvider>(context, listen: false);
+                        Navigator.of(dialogContext).pop();
+                        final success = await adminProvider.deleteUser(user.id);
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(success ? 'User deleted successfully!' : adminProvider.error ?? 'Failed to delete user.'),
+                              backgroundColor: success ? Colors.green : Colors.red,
+                            ),
+                          );
+                        }
+                      }
+                    : null, 
+                  child: Text(
+                    'Delete', 
+                    // Change color based on state
+                    style: TextStyle(
+                      color: isDeleteEnabled ? Colors.red : Colors.grey
+                    )
+                  ),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -581,7 +643,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         return Colors.pink.shade600;
       case 'student':
       default:
-        return Theme.of(context).colorScheme.primary;
+        return Colors.blue.shade600; // Consistent primary
     }
   }
 
@@ -590,21 +652,11 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Lottie.asset(
-            'assets/empty_list.json',
-            width: 250,
-          ),
+          Lottie.asset('assets/empty_list.json', width: 200),
           const SizedBox(height: 20),
-          const Text(
-            'No Users Found',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-          ),
+          const Text('No Users Found', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          Text(
-            'There are no users to manage at the moment.',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-          ),
+          const Text('There are no users to manage.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
         ],
       ),
     );
@@ -615,13 +667,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 80, color: Colors.grey[300]),
+          Icon(icon, size: 60, color: Colors.grey[300]),
           const SizedBox(height: 20),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-          ),
+          Text(message, textAlign: TextAlign.center, style: TextStyle(fontSize: 16, color: Colors.grey[600])),
         ],
       ),
     );

@@ -29,13 +29,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     if (success) {
       if (mounted) {
-        // Show the success animation instead of just a snackbar
         setState(() {
           _isLoading = false;
           _showSuccessAnimation = true;
         });
         
-        // After a delay, navigate to the reset screen
         Future.delayed(const Duration(seconds: 3), () {
           if (mounted) {
              Navigator.of(context).pushReplacement(
@@ -69,12 +67,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
-            // NEW: Use AnimatedCrossFade to switch between the form and success animation
             child: AnimatedCrossFade(
               duration: const Duration(milliseconds: 400),
               crossFadeState: _showSuccessAnimation ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-              firstChild: _buildForm(), // The original form
-              secondChild: _buildSuccessView(), // The new success animation view
+              firstChild: _buildForm(), 
+              secondChild: _buildSuccessView(), 
             ),
           ),
         ),
@@ -82,7 +79,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
   }
 
-  // NEW: Extracted the form into its own method for clarity
   Widget _buildForm() {
     final theme = Theme.of(context);
     return AnimationLimiter(
@@ -99,7 +95,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           ),
           children: [
             Lottie.asset(
-              'assets/forgot_password.json', // Animation for the form
+              'assets/forgot_password.json', 
               height: 220,
             ),
             const SizedBox(height: 24),
@@ -119,25 +115,26 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             const SizedBox(height: 24),
             _isLoading
                 ? Center(child: Lottie.asset('assets/loader.json', height: 60))
-                : _buildSendLinkButton(),
+                : _buildSendLinkButton(), // Updated button style
           ],
         ),
       ),
     );
   }
 
-  // NEW: The success view with its own animation
   Widget _buildSuccessView() {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Lottie.asset(
-          'assets/email_sent.json', // A new animation for the success state
+          'assets/email_sent.json', 
           height: 220,
           repeat: false,
         ),
         const SizedBox(height: 24),
+        // Matching the success color text concept if desired, but keeping green for success semantics is fine. 
+        // However, for consistent "Modern" look, we stick to standard status colors for text, or use primary.
         const Text(
           'Email Sent!',
           textAlign: TextAlign.center,
@@ -176,16 +173,44 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
   }
 
+  // --- MODIFIED BUTTON WITH MODERN GRADIENT ---
   Widget _buildSendLinkButton() {
-    return ElevatedButton(
-      onPressed: _sendResetLink,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
-        elevation: 0,
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8.0),
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFF7F00FF), // Violet
+            Color(0xFFE100FF), // Fuchsia
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF7F00FF).withOpacity(0.4),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: const Text('Send Reset Token', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+      child: ElevatedButton(
+        onPressed: _sendResetLink,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+        ),
+        child: const Text(
+          'Send Reset Token', 
+          style: TextStyle(
+            fontSize: 16, 
+            fontWeight: FontWeight.bold, 
+            color: Colors.white
+          )
+        ),
+      ),
     );
   }
 }

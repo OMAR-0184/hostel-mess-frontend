@@ -1,15 +1,16 @@
-// screens/home_screen.dart
+// lib/screens/home_screen.dart
 
 import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.dart';
-import 'package:flutter/cupertino.dart'; // IMPORTED for Cupertino icons
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../provider/auth_provider.dart';
+import 'dart:ui'; // Required for BackdropFilter
 
 // Import the screens
 import 'dashboard_screen.dart';
 import 'booking_screen.dart';
-import 'my_bookings_screen.dart'; 
+// import 'my_bookings_screen.dart'; // No longer needed in navbar
 import 'notice_screen.dart';
 import 'profile_screen.dart';
 
@@ -24,11 +25,9 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   late PageController _pageController;
 
-  // --- UPDATED: Using modern Cupertino icons ---
   final iconList = <IconData>[
     CupertinoIcons.home,
     CupertinoIcons.square_list,
-    CupertinoIcons.clock,
     CupertinoIcons.bell,
     CupertinoIcons.person,
   ];
@@ -48,7 +47,6 @@ class _HomeScreenState extends State<HomeScreen> {
   static final List<Widget> _widgetOptions = <Widget>[
     const DashboardScreen(),
     const BookingScreen(),
-    MyBookingsScreen(),
     const NoticeScreen(),
     const ProfileScreen(),
   ];
@@ -59,7 +57,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     _pageController.animateToPage(
       index,
-      // --- UPDATED: Smoother, more modern animation curve and duration ---
       duration: const Duration(milliseconds: 500),
       curve: Curves.fastOutSlowIn,
     );
@@ -82,9 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
             TextButton(
               child: const Text('Logout', style: TextStyle(color: Colors.red)),
               onPressed: () {
-                // --- FIX: Pop dialog FIRST ---
                 Navigator.of(dialogContext).pop();
-                // --- THEN call logout ---
                 Provider.of<AuthProvider>(context, listen: false).logout();
               },
             ),
@@ -97,7 +92,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
+    final isDarkMode = theme.brightness == Brightness.dark;
+    
     String getTitle(int index) {
       switch (index) {
         case 0:
@@ -105,62 +101,67 @@ class _HomeScreenState extends State<HomeScreen> {
         case 1:
           return 'Book a Meal';
         case 2:
-          return 'My Bookings';
-        case 3:
           return 'Notices';
-        case 4:
+        case 3:
           return 'Profile';
         default:
           return 'Hostel Mess';
       }
     }
 
+    // Index 0 is Dashboard, Index 3 is Profile
+    final bool hideAppBar = _selectedIndex == 0 || _selectedIndex == 3;
+
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: theme.scaffoldBackgroundColor,
-        elevation: 0,
-        // --- UPDATED: AnimatedSwitcher for a cool title transition ---
-        title: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          transitionBuilder: (Widget child, Animation<double> animation) {
-            return FadeTransition(
-              opacity: animation,
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0.0, -0.5),
-                  end: const Offset(0.0, 0.0),
-                ).animate(animation),
-                child: child,
+      // This allows the PageView to slide under the nav bar
+      extendBody: true,
+      appBar: hideAppBar 
+          ? null 
+          : AppBar(
+              backgroundColor: theme.scaffoldBackgroundColor,
+              elevation: 0,
+              centerTitle: true, 
+              title: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 400),
+                transitionBuilder: (Widget child, Animation<double> animation) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0.0, 0.3),
+                        end: const Offset(0.0, 0.0),
+                      ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutBack)),
+                      child: child,
+                    ),
+                  );
+                },
+                child: Text(
+                  getTitle(_selectedIndex).toUpperCase(),
+                  key: ValueKey<int>(_selectedIndex),
+                  style: TextStyle(
+                    color: theme.colorScheme.primary, 
+                    fontSize: 24, 
+                    fontWeight: FontWeight.w900, 
+                    letterSpacing: 1.2, 
+                    height: 1.0,
+                  ),
+                ),
               ),
-            );
-          },
-          child: Text(
-            getTitle(_selectedIndex),
-            key: ValueKey<int>(_selectedIndex), // Ensures the animation triggers
-            style: TextStyle(
-              color: theme.brightness == Brightness.dark 
-                  ? theme.colorScheme.onBackground 
-                  : theme.colorScheme.primary,
-              fontWeight: FontWeight.bold,
+              actions: [
+                IconButton(
+                  icon: Icon(
+                    Icons.logout_rounded,
+                    color: theme.iconTheme.color?.withOpacity(0.7),
+                  ),
+                  tooltip: 'Logout',
+                  onPressed: () {
+                    _showLogoutConfirmationDialog(context);
+                  },
+                ),
+                const SizedBox(width: 8),
+              ],
             ),
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(
-              Icons.logout, // Sticking with Material icon for logout
-              color: theme.brightness == Brightness.dark 
-                  ? theme.colorScheme.onBackground.withOpacity(0.7)
-                  : Colors.grey[700],
-            ),
-            tooltip: 'Logout',
-            onPressed: () {
-              _showLogoutConfirmationDialog(context);
-            },
-          ),
-        ],
-      ),
       body: PageView(
         controller: _pageController,
         onPageChanged: (index) {
@@ -168,27 +169,48 @@ class _HomeScreenState extends State<HomeScreen> {
             _selectedIndex = index;
           });
         },
+        physics: const BouncingScrollPhysics(),
         children: _widgetOptions,
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: AnimatedBottomNavigationBar(
-        icons: iconList,
-        activeIndex: _selectedIndex,
-        gapLocation: GapLocation.none,
-        notchSmoothness: NotchSmoothness.verySmoothEdge,
-        leftCornerRadius: 32,
-        rightCornerRadius: 32,
-        onTap: (index) => _onItemTapped(index),
-        activeColor: theme.colorScheme.primary,
-        inactiveColor: theme.colorScheme.onSurface.withOpacity(0.6),
-        backgroundColor: theme.cardTheme.color,
-        // --- UPDATED: Added splash color and modern shadow ---
-        splashColor: theme.colorScheme.primary.withOpacity(0.15),
-        splashSpeedInMilliseconds: 300,
-        shadow: BoxShadow(
-          color: theme.shadowColor.withOpacity(0.08),
-          blurRadius: 15,
-          offset: const Offset(0, -5), // Softer shadow coming from the top
+      
+      // --- NAVBAR WRAPPED FOR GLASS EFFECT ---
+      bottomNavigationBar: ClipRRect(
+        // Clips the blur to match the nav bar's rounded corners
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(32),
+          topRight: Radius.circular(32),
+        ),
+        child: BackdropFilter(
+          // --- MODIFIED: Increased blur sigma for a "glossier" look ---
+          filter: ImageFilter.blur(sigmaX: 30.0, sigmaY: 30.0), // Was 20.0
+          child: AnimatedBottomNavigationBar(
+            icons: iconList,
+            activeIndex: _selectedIndex,
+            gapLocation: GapLocation.none,
+            notchSmoothness: NotchSmoothness.verySmoothEdge,
+            leftCornerRadius: 32,
+            rightCornerRadius: 32,
+            onTap: (index) => _onItemTapped(index),
+            activeColor: theme.colorScheme.primary,
+            inactiveColor: theme.colorScheme.onSurface.withOpacity(0.6),
+            
+            // --- MODIFIED: Decreased opacity for more transparency ---
+            backgroundColor: isDarkMode 
+                ? Colors.black.withOpacity(0.25) // Was 0.3
+                : Colors.white.withOpacity(0.25), // Was 0.3
+            splashColor: theme.colorScheme.primary.withOpacity(0.15),
+            iconSize: 26, 
+            // --- MODIFIED: Made shadow (top border) more subtle ---
+            shadow: BoxShadow(
+              color: isDarkMode 
+                  ? Colors.white.withOpacity(0.1) // Was 0.15
+                  : Colors.black.withOpacity(0.1), // Was 0.15
+              blurRadius: 0,
+              spreadRadius: 0.25, // Was 0.5
+              offset: const Offset(0, -0.25), // Was -0.5
+            ),
+          ),
         ),
       ),
     );
