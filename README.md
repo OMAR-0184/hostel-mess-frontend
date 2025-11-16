@@ -38,8 +38,7 @@ The application is built using a modern, scalable architecture centered around t
 ### Booking Screen
 <img src="https://github.com/user-attachments/assets/43049e63-9e5b-430b-b6be-5ac240cd879c" width="150">
 
-### User Management Screen
-<img src="https://github.com/user-attachments/assets/48cff7f0-163a-4933-9a50-cceae9dfe9de" width="150">
+
 
 ---
 
