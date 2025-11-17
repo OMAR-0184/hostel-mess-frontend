@@ -16,8 +16,8 @@ class MyBookingsScreen extends StatefulWidget {
 
 class _MyBookingsScreenState extends State<MyBookingsScreen> {
   // --- 1. State variable to track visible items ---
-  int _visibleCount = 3; 
-  static const int _incrementCount = 3;
+  int _visibleCount = 5;
+  static const int _incrementCount = 5;
 
   @override
   void initState() {
@@ -42,9 +42,9 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
       margin: const EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 16.0),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: isDarkMode 
-            ? [Colors.blueGrey.shade800, Colors.black.withOpacity(0.5)]
-            : [Colors.white, Colors.grey.shade100],
+          colors: isDarkMode
+              ? [Colors.blueGrey.shade800, Colors.black.withOpacity(0.5)]
+              : [Colors.white, Colors.grey.shade100],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -64,7 +64,8 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
       ),
       child: Row(
         children: [
-          Icon(Icons.history_rounded, size: 40, color: theme.colorScheme.primary),
+          Icon(Icons.history_rounded,
+              size: 40, color: theme.colorScheme.primary),
           SizedBox(width: 16),
           Expanded(
             child: Column(
@@ -96,126 +97,141 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      body: Consumer<MyBookingsProvider>(
-        builder: (context, provider, child) {
-          if (provider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (provider.errorMessage != null) {
-            return _buildInfoMessage(
-              theme,
-              message: provider.errorMessage!,
-              lottieAsset: 'assets/not_found.json',
-            );
-          }
-          if (provider.bookingHistory.isEmpty) {
-            // --- MODIFIED: Added header to empty state as well ---
+      // --- THIS IS THE FIX ---
+      // Wrap the body in a SafeArea to prevent overlap
+      // with the system status bar (top) and navigation bar (bottom).
+      body: SafeArea(
+        top: true,
+        bottom: true,
+        child: Consumer<MyBookingsProvider>(
+          builder: (context, provider, child) {
+            if (provider.isLoading) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (provider.errorMessage != null) {
+              return _buildInfoMessage(
+                theme,
+                message: provider.errorMessage!,
+                lottieAsset: 'assets/not_found.json',
+              );
+            }
+            if (provider.bookingHistory.isEmpty) {
+              // --- MODIFIED: Added header to empty state as well ---
+              return Column(
+                children: [
+                  _buildHeader(theme),
+                  Expanded(
+                    child: _buildInfoMessage(
+                      theme,
+                      message: 'No meals cooked up yet 🍽️',
+                      subMessage: 'Book a meal to see it here!',
+                      lottieAsset: 'assets/no-food.json',
+                    ),
+                  ),
+                ],
+              );
+            }
+
+            final sortedHistory = List.of(provider.bookingHistory);
+            sortedHistory
+                .sort((a, b) => b.bookingDate.compareTo(a.bookingDate));
+
+            // --- 2. Calculate display counts ---
+            final int totalItems = sortedHistory.length;
+            final int currentDisplayCount =
+                (_visibleCount < totalItems) ? _visibleCount : totalItems;
+            final bool hasMore = _visibleCount < totalItems;
+
+            // --- MODIFIED: Wrapped in Column and added Header ---
             return Column(
               children: [
-                _buildHeader(theme),
+                _buildHeader(theme), // ADDED HEADER
                 Expanded(
-                  child: _buildInfoMessage(
-                    theme,
-                    message: 'No meals cooked up yet 🍽️',
-                    subMessage: 'Book a meal to see it here!',
-                    lottieAsset: 'assets/no-food.json',
-                  ),
-                ),
-              ],
-            );
-          }
-
-          final sortedHistory = List.of(provider.bookingHistory);
-          sortedHistory.sort((a, b) => b.bookingDate.compareTo(a.bookingDate));
-
-          // --- 2. Calculate display counts ---
-          final int totalItems = sortedHistory.length;
-          final int currentDisplayCount = (_visibleCount < totalItems) ? _visibleCount : totalItems;
-          final bool hasMore = _visibleCount < totalItems;
-
-          // --- MODIFIED: Wrapped in Column and added Header ---
-          return Column(
-            children: [
-              _buildHeader(theme), // ADDED HEADER
-              Expanded(
-                child: AnimationLimiter(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 4.0), // Adjusted padding
-                    itemCount: currentDisplayCount + (hasMore ? 1 : 0),
-                    itemBuilder: (context, index) {
-                      // If we are at the last index and hasMore is true, show the button
-                      if (hasMore && index == currentDisplayCount) {
-                        return AnimationConfiguration.staggeredList(
-                          position: index,
-                          duration: const Duration(milliseconds: 375),
-                          child: FadeInAnimation(
-                            child: Padding(
-                              padding: const EdgeInsets.only(top: 16.0),
-                              child: Center(
-                                child: TextButton.icon(
-                                  onPressed: _loadMore,
-                                  icon: Icon(Icons.keyboard_arrow_down_rounded, color: theme.colorScheme.primary),
-                                  label: Text(
-                                    "See More",
-                                    style: TextStyle(
-                                      color: theme.colorScheme.primary,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
+                  child: AnimationLimiter(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20.0, vertical: 4.0), // Adjusted padding
+                      itemCount: currentDisplayCount + (hasMore ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        // If we are at the last index and hasMore is true, show the button
+                        if (hasMore && index == currentDisplayCount) {
+                          return AnimationConfiguration.staggeredList(
+                            position: index,
+                            duration: const Duration(milliseconds: 375),
+                            child: FadeInAnimation(
+                              child: Padding(
+                                // --- MODIFICATION: Added bottom padding for the button ---
+                                padding: const EdgeInsets.only(
+                                    top: 16.0, bottom: 16.0),
+                                child: Center(
+                                  child: TextButton.icon(
+                                    onPressed: _loadMore,
+                                    icon: Icon(
+                                        Icons.keyboard_arrow_down_rounded,
+                                        color: theme.colorScheme.primary),
+                                    label: Text(
+                                      "See More",
+                                      style: TextStyle(
+                                        color: theme.colorScheme.primary,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
                                     ),
-                                  ),
-                                  style: TextButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                                    backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(30),
+                                    style: TextButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 24, vertical: 12),
+                                      backgroundColor: theme.colorScheme.primary
+                                          .withOpacity(0.1),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(30),
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                        );
-                      }
+                          );
+                        }
 
-                      // Otherwise, render the booking card
-                      final booking = sortedHistory[index];
-                      return AnimationConfiguration.staggeredList(
-                        position: index,
-                        duration: const Duration(milliseconds: 500),
-                        child: SlideAnimation(
-                          verticalOffset: 50.0,
-                          child: FadeInAnimation(
-                            child: TimelineBookingCard(
-                              booking: booking,
-                              isLast: index == currentDisplayCount - 1 && !hasMore,
-                              theme: theme,
+                        // Otherwise, render the booking card
+                        final booking = sortedHistory[index];
+                        return AnimationConfiguration.staggeredList(
+                          position: index,
+                          duration: const Duration(milliseconds: 500),
+                          child: SlideAnimation(
+                            verticalOffset: 50.0,
+                            child: FadeInAnimation(
+                              child: TimelineBookingCard(
+                                booking: booking,
+                                isLast: index == currentDisplayCount - 1 &&
+                                    !hasMore,
+                                theme: theme,
+                              ),
                             ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
                 ),
-              ),
-            ],
-          );
-        },
+              ],
+            );
+          },
+        ),
       ),
     );
   }
 
   Widget _buildInfoMessage(ThemeData theme,
-      {required String message, String? subMessage, required String lottieAsset}) {
+      {required String message,
+      String? subMessage,
+      required String lottieAsset}) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Lottie.asset(
-            lottieAsset, 
-            width: 200, 
-            height: 200,
-            fit: BoxFit.contain
-          ),
+          Lottie.asset(lottieAsset,
+              width: 200, height: 200, fit: BoxFit.contain),
           const SizedBox(height: 24),
           Text(
             message,
@@ -301,9 +317,10 @@ class TimelineBookingCard extends StatelessWidget {
                 child: Material(
                   color: Colors.transparent,
                   child: Padding(
-                    padding: const EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                     child: Column(
-                      mainAxisSize: MainAxisSize.min, 
+                      mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Date Header
@@ -314,7 +331,8 @@ class TimelineBookingCard extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  DateFormat('EEEE').format(booking.bookingDate),
+                                  DateFormat('EEEE')
+                                      .format(booking.bookingDate),
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
@@ -324,8 +342,10 @@ class TimelineBookingCard extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  DateFormat('d MMMM').format(booking.bookingDate),
-                                  style: theme.textTheme.headlineSmall?.copyWith(
+                                  DateFormat('d MMMM')
+                                      .format(booking.bookingDate),
+                                  style:
+                                      theme.textTheme.headlineSmall?.copyWith(
                                     fontWeight: FontWeight.bold,
                                     height: 1.1,
                                   ),
@@ -357,22 +377,38 @@ class TimelineBookingCard extends StatelessWidget {
                           title: 'Lunch',
                           items: booking.lunchPick,
                           gradientColors: isDarkMode
-                              ? [const Color(0xFFB96C38), const Color(0xFF7E4118)]
-                              : [const Color(0xFFFFF3E0), const Color(0xFFFFE0B2)],
+                              ? [
+                                  const Color(0xFFB96C38),
+                                  const Color(0xFF7E4118)
+                                ]
+                              : [
+                                  const Color(0xFFFFF3E0),
+                                  const Color(0xFFFFE0B2)
+                                ],
                           iconColor: Colors.orange,
                           icon: Icons.wb_sunny_rounded,
-                          textColor: isDarkMode ? Colors.orange.shade100 : Colors.orange.shade900,
+                          textColor: isDarkMode
+                              ? Colors.orange.shade100
+                              : Colors.orange.shade900,
                         ),
                         const SizedBox(height: 8),
                         _buildMealSection(
                           title: 'Dinner',
                           items: booking.dinnerPick,
                           gradientColors: isDarkMode
-                              ? [const Color(0xFF4A3880), const Color(0xFF291E4E)]
-                              : [const Color(0xFFEDE7F6), const Color(0xFFD1C4E9)],
+                              ? [
+                                  const Color(0xFF4A3880),
+                                  const Color(0xFF291E4E)
+                                ]
+                              : [
+                                  const Color(0xFFEDE7F6),
+                                  const Color(0xFFD1C4E9)
+                                ],
                           iconColor: Colors.deepPurple,
                           icon: Icons.nights_stay_rounded,
-                          textColor: isDarkMode ? Colors.deepPurple.shade100 : Colors.deepPurple.shade900,
+                          textColor: isDarkMode
+                              ? Colors.deepPurple.shade100
+                              : Colors.deepPurple.shade900,
                         ),
                       ],
                     ),
@@ -388,7 +424,7 @@ class TimelineBookingCard extends StatelessWidget {
 
   Widget _buildTimelineMarker(BuildContext context, bool isToday) {
     final color = isToday ? theme.colorScheme.primary : Colors.grey.shade300;
-    
+
     return Column(
       children: [
         if (isToday)
@@ -485,14 +521,24 @@ class TimelineBookingCard extends StatelessWidget {
   Widget _buildMealChip(String label) {
     String iconText = '🍴';
     final lowerLabel = label.toLowerCase();
-    if (lowerLabel.contains('chicken')) iconText = '🍗';
-    else if (lowerLabel.contains('paneer')) iconText = '🧀';
-    else if (lowerLabel.contains('egg')) iconText = '🥚';
-    else if (lowerLabel.contains('rice')) iconText = '🍚';
-    else if (lowerLabel.contains('dal') || lowerLabel.contains('daal')) iconText = '🥣';
-    else if (lowerLabel.contains('roti') || lowerLabel.contains('bread') || lowerLabel.contains('naan')) iconText = '🫓';
-    else if (lowerLabel.contains('burger')) iconText = '🍔';
-    else if (lowerLabel.contains('fish')) iconText = '🐟';
+    if (lowerLabel.contains('chicken'))
+      iconText = '🍗';
+    else if (lowerLabel.contains('paneer'))
+      iconText = '🧀';
+    else if (lowerLabel.contains('egg'))
+      iconText = '🥚';
+    else if (lowerLabel.contains('rice'))
+      iconText = '🍚';
+    else if (lowerLabel.contains('dal') || lowerLabel.contains('daal'))
+      iconText = '🥣';
+    else if (lowerLabel.contains('roti') ||
+        lowerLabel.contains('bread') ||
+        lowerLabel.contains('naan'))
+      iconText = '🫓';
+    else if (lowerLabel.contains('burger'))
+      iconText = '🍔';
+    else if (lowerLabel.contains('fish'))
+      iconText = '🐟';
     else if (lowerLabel.contains('salad')) iconText = '🥗';
 
     return Container(

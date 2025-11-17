@@ -45,28 +45,33 @@ class ProfileScreen extends StatelessWidget {
         child: user == null
             ? const Center(child: CircularProgressIndicator())
             : SingleChildScrollView(
+                // --- MODIFICATION: Added bottom padding for scroll room ---
+                padding: const EdgeInsets.only(bottom: 100.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildHeroHeader(context, theme, user),
-                    const SizedBox(height: 24),
+                    // --- MODIFICATION: Standardized spacing ---
+                    const SizedBox(height: 32),
                     
                     if (user.role == 'convenor' || user.role == 'mess_committee') ...[
                       _buildSectionTitle(theme, "MANAGEMENT"),
                       _buildAdminSection(context, user),
-                      const SizedBox(height: 24),
+                      // --- MODIFICATION: Standardized spacing ---
+                      const SizedBox(height: 32),
                     ],
 
                     _buildSectionTitle(theme, "MEALS"),
                     _buildMealsSection(context),
-                    const SizedBox(height: 24),
+                    // --- MODIFICATION: Standardized spacing ---
+                    const SizedBox(height: 32),
 
                     _buildSectionTitle(theme, "PREFERENCES"),
                     _buildPreferencesSection(context, theme, user),
                     
                     const SizedBox(height: 40),
                     _buildLogoutButton(context),
-                    const SizedBox(height: 40),
+                    // --- MODIFICATION: Removed bottom SizedBox, handled by padding ---
                   ],
                 ),
               ),
@@ -193,6 +198,7 @@ class ProfileScreen extends StatelessWidget {
   }
   Widget _buildStatsRow(ThemeData theme, User user) {
     return Container(
+      // This margin aligns with the section titles and list items
       margin: const EdgeInsets.symmetric(horizontal: 24),
       padding: const EdgeInsets.symmetric(vertical: 16),
       decoration: BoxDecoration(
@@ -244,7 +250,8 @@ class ProfileScreen extends StatelessWidget {
   // --- SECTION HELPERS ---
   Widget _buildSectionTitle(ThemeData theme, String title) {
     return Padding(
-      padding: const EdgeInsets.only(left: 24.0, bottom: 8.0),
+      // --- MODIFICATION: Added right padding for consistency ---
+      padding: const EdgeInsets.fromLTRB(24.0, 0, 24.0, 8.0),
       child: Text(
         title,
         style: TextStyle(
@@ -295,21 +302,21 @@ class ProfileScreen extends StatelessWidget {
           icon: Icons.receipt_long_rounded,
           color: Colors.orange,
           title: "Daily Meal List",
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MealListScreen())),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MealListScreen())),
         ),
         _buildModernListTile(
           context: context, 
           icon: Icons.history_rounded, 
           color: Colors.cyan, 
           title: "My Booking History",
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MyBookingsScreen())),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyBookingsScreen())),
         ),
         _buildModernListTile(
           context: context, 
           icon: Icons.star_outline_rounded,
           color: Colors.teal,
           title: "Rate Your Meal", 
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => FeedbackScreen())), 
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FeedbackScreen())), 
 ),
       ],
     );
@@ -326,7 +333,8 @@ class ProfileScreen extends StatelessWidget {
           onTap: () => _showResetPasswordConfirmation(context, user),
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+          // --- MODIFICATION: Aligned horizontal padding to 24.0 ---
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
           child: Row(
             children: [
               Container(
@@ -361,7 +369,8 @@ class ProfileScreen extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+        // --- MODIFICATION: Aligned horizontal padding to 24.0 ---
+        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
         child: Row(
           children: [
             Container(

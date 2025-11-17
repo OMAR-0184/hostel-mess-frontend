@@ -14,7 +14,12 @@ class NoticeScreen extends StatefulWidget {
   _NoticeScreenState createState() => _NoticeScreenState();
 }
 
-class _NoticeScreenState extends State<NoticeScreen> {
+class _NoticeScreenState extends State<NoticeScreen>
+    with AutomaticKeepAliveClientMixin {
+  
+  @override
+  bool get wantKeepAlive => true;
+  
   @override
   void initState() {
     super.initState();
@@ -70,58 +75,77 @@ class _NoticeScreenState extends State<NoticeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
+    
     final theme = Theme.of(context);
     final user = Provider.of<AuthProvider>(context).user;
     final bool isAdmin =
         user?.role == 'convenor' || user?.role == 'mess_committee';
 
-    // --- FIX: Wrapped in SafeArea (and removed bottom: false) ---
-    return SafeArea(
-      child: Container( 
-        color: theme.scaffoldBackgroundColor,
-        child: Consumer<NoticeProvider>(
-          builder: (context, noticeProvider, child) {
-            if (noticeProvider.isLoading && noticeProvider.notices.isEmpty) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (noticeProvider.notices.isEmpty) {
-              return _buildInfoMessage(
-                theme,
-                icon: Icons.notifications_none_rounded,
-                message: 'No notices posted yet.',
-              );
-            }
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        elevation: 0,
+        centerTitle: true,
+        title: Text(
+          'NOTICES',
+          style: TextStyle(
+            color: theme.colorScheme.primary,
+            fontSize: 24,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.2,
+            height: 1.0,
+          ),
+        ),
+      ),
+      body: SafeArea(
+        top: false, // AppBar now handles the top area
+        bottom: true, 
+        child: Container( 
+          child: Consumer<NoticeProvider>(
+            builder: (context, noticeProvider, child) {
+              if (noticeProvider.isLoading && noticeProvider.notices.isEmpty) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (noticeProvider.notices.isEmpty) {
+                return _buildInfoMessage(
+                  theme,
+                  icon: Icons.notifications_none_rounded,
+                  message: 'No notices posted yet.',
+                );
+              }
 
-            return RefreshIndicator(
-              onRefresh: _refreshNotices,
-              color: theme.colorScheme.primary,
-              child: AnimationLimiter(
-                child: ListView.builder(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  // --- FIX: Removed manual bottom padding ---
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),
-                  itemCount: noticeProvider.notices.length, 
-                  itemBuilder: (BuildContext context, int index) {
-                    final notice = noticeProvider.notices[index];
-                    return AnimationConfiguration.staggeredList(
-                      position: index,
-                      duration: const Duration(milliseconds: 500),
-                      child: SlideAnimation(
-                        verticalOffset: 50.0,
-                        child: FadeInAnimation(
-                          child: NoticeCard(
-                            notice: notice,
-                            isAdmin: isAdmin,
-                            onDelete: () => _showDeleteConfirmationDialog(notice),
+              return RefreshIndicator(
+                onRefresh: _refreshNotices,
+                color: theme.colorScheme.primary,
+                child: AnimationLimiter(
+                  child: ListView.builder(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 100.0),
+                    itemCount: noticeProvider.notices.length, 
+                    itemBuilder: (BuildContext context, int index) {
+                      final notice = noticeProvider.notices[index];
+                      return AnimationConfiguration.staggeredList(
+                        position: index,
+                        duration: const Duration(milliseconds: 500),
+                        child: SlideAnimation(
+                          verticalOffset: 50.0,
+                          child: FadeInAnimation(
+                            child: NoticeCard(
+                              notice: notice,
+                              isAdmin: isAdmin,
+                              onDelete: () => _showDeleteConfirmationDialog(notice),
+                            ),
                           ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );
@@ -160,12 +184,22 @@ class NoticeCard extends StatefulWidget {
   _NoticeCardState createState() => _NoticeCardState();
 }
 
+// ======================================================================
+//
+//               !!! THIS IS THE LINE WITH THE FIX !!!
+//
+// Ensure your file has `extends State<NoticeCard>` exactly as written below.
+//
+// ======================================================================
 class _NoticeCardState extends State<NoticeCard> {
   bool _isExpanded = false;
 
   bool get isLongNotice {
-    const maxCharsForShortNotice = 140;
+    // Increased the character limit to be less sensitive.
+    // A notice is only "long" if it has > 3 newlines OR is > 250 chars.
+    const maxCharsForShortNotice = 250; // Was 140
     const maxLinesForShortNotice = 3;
+    
     final lines = widget.notice.content.split('\n');
     return lines.length > maxLinesForShortNotice ||
         widget.notice.content.length > maxCharsForShortNotice;

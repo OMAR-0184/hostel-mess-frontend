@@ -160,33 +160,9 @@ class AdminProvider with ChangeNotifier {
     return false;
   }
   
-  /// Deletes the daily menu by calling DELETE /menus/{date}
-  Future<bool> deleteMenuForDate(DateTime date) async {
-    _isSubmitting = true;
-    _error = null;
-    notifyListeners();
-
-    final dateString = DateFormat('yyyy-MM-dd').format(date);
-    try {
-      final response = await _apiService.delete('/menus/$dateString');
-
-      if (response.statusCode == 204) {
-        _isSubmitting = false;
-        notifyListeners();
-        return true;
-      } else {
-        final responseData = json.decode(response.body);
-        _error = responseData['detail'] ?? 'Failed to delete menu.';
-      }
-    } catch (e) {
-      _error = 'An error occurred. Please check your connection.';
-      print(e);
-    }
-
-    _isSubmitting = false;
-    notifyListeners();
-    return false;
-  }
+  // --- REMOVED: deleteMenuForDate method ---
+  // This method was calling an endpoint (DELETE /menus/{date}) that does not exist 
+  // in the backend router (app/Routers/menus.py).
 
   /// Posts a new notice by calling POST /notices/
   Future<bool> postNotice({required String title, required String content}) async {
