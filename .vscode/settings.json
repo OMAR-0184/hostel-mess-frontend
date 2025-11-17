@@ -1,3 +1,4 @@
 {
-    "java.configuration.updateBuildConfiguration": "interactive"
+    "java.configuration.updateBuildConfiguration": "interactive",
+    "cmake.sourceDirectory": "/Users/omarabdullah/Documents/Code/Projects/Bhaipo/hostel-mess/messappv3/hostel-mess-frontend/linux"
 }

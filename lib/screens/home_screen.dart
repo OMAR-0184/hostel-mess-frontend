@@ -1,3 +1,4 @@
+// lib/screens/home_screen.dart
 
 import 'package:animated_bottom_navigation_bar/animated_bottom_navigation_bar.dart';
 import 'package:flutter/cupertino.dart';
@@ -60,106 +61,24 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _showLogoutConfirmationDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)),
-          title: const Text('Confirm Logout'),
-          content: const Text('Are you sure you want to log out?'),
-          actions: [
-            TextButton(
-              child: const Text('Cancel'),
-              onPressed: () => Navigator.of(dialogContext).pop(),
-            ),
-            TextButton(
-              child: const Text('Logout', style: TextStyle(color: Colors.red)),
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-                Provider.of<AuthProvider>(context, listen: false).logout();
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
+  // --- REMOVED: _showLogoutConfirmationDialog (already in profile_screen.dart) ---
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
     
-    String getTitle(int index) {
-      switch (index) {
-        case 0:
-          return 'Dashboard';
-        case 1:
-          return 'Book a Meal';
-        case 2:
-          return 'Notices';
-        case 3:
-          return 'Profile';
-        default:
-          return 'Hostel Mess';
-      }
-    }
+    // --- REMOVED: getTitle function ---
 
-    // Index 0 is Dashboard, Index 3 is Profile
-    final bool hideAppBar = _selectedIndex == 0 || _selectedIndex == 3;
+    // --- REMOVED: hideAppBar boolean ---
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       // This allows the PageView to slide under the nav bar
       extendBody: true,
-      appBar: hideAppBar 
-          ? null 
-          : AppBar(
-              backgroundColor: theme.scaffoldBackgroundColor,
-              elevation: 0,
-              centerTitle: true, 
-              title: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 400),
-                transitionBuilder: (Widget child, Animation<double> animation) {
-                  return FadeTransition(
-                    opacity: animation,
-                    child: SlideTransition(
-                      position: Tween<Offset>(
-                        begin: const Offset(0.0, 0.3),
-                        end: const Offset(0.0, 0.0),
-                      ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutBack)),
-                      child: child,
-                    ),
-                  );
-                },
-                child: Text(
-                  getTitle(_selectedIndex).toUpperCase(),
-                  key: ValueKey<int>(_selectedIndex),
-                  style: TextStyle(
-                    color: theme.colorScheme.primary, 
-                    fontSize: 24, 
-                    fontWeight: FontWeight.w900, 
-                    letterSpacing: 1.2, 
-                    height: 1.0,
-                  ),
-                ),
-              ),
-              actions: [
-                IconButton(
-                  icon: Icon(
-                    Icons.logout_rounded,
-                    color: theme.iconTheme.color?.withOpacity(0.7),
-                  ),
-                  tooltip: 'Logout',
-                  onPressed: () {
-                    _showLogoutConfirmationDialog(context);
-                  },
-                ),
-                const SizedBox(width: 8),
-              ],
-            ),
+      
+      // --- REMOVED: appBar property ---
+      
       body: PageView(
         controller: _pageController,
         onPageChanged: (index) {

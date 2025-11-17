@@ -21,7 +21,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   String _selectedRole = 'All';
   List<User> _filteredUsers = [];
   bool _isFilterExpanded = false;
-  
+
   final List<String> _roles = ['All', 'student', 'convenor', 'mess_committee'];
 
   @override
@@ -29,12 +29,12 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     super.initState();
     _searchController.addListener(_filterUsers);
     _roomFilterController.addListener(_filterUsers);
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final adminProvider = Provider.of<AdminProvider>(context, listen: false);
       adminProvider.fetchAllUsers().then((_) {
         if (mounted) {
-           setState(() {
+          setState(() {
             _filteredUsers = adminProvider.users;
           });
         }
@@ -46,7 +46,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   void dispose() {
     _searchController.removeListener(_filterUsers);
     _searchController.dispose();
-    _roomFilterController.removeListener(_filterUsers); 
+    _roomFilterController.removeListener(_filterUsers);
     _roomFilterController.dispose();
     super.dispose();
   }
@@ -55,16 +55,16 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     final adminProvider = Provider.of<AdminProvider>(context, listen: false);
     final nameQuery = _searchController.text.toLowerCase();
     final roomQuery = _roomFilterController.text;
-    
+
+    // --- Calls setState ---
     setState(() {
       _filteredUsers = adminProvider.users.where((user) {
         final nameMatches = user.name.toLowerCase().contains(nameQuery);
         final roomMatches = roomQuery.isEmpty
             ? true
             : user.roomNumber.toString().contains(roomQuery);
-        final roleMatches = _selectedRole == 'All'
-            ? true
-            : user.role == _selectedRole;
+        final roleMatches =
+            _selectedRole == 'All' ? true : user.role == _selectedRole;
 
         return nameMatches && roomMatches && roleMatches;
       }).toList();
@@ -72,8 +72,10 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   }
 
   Future<void> _refreshUsers() async {
-    await Provider.of<AdminProvider>(context, listen: false).fetchAllUsers(forceRefresh: true);
-    _filterUsers(); 
+    // This now just re-applies filters, as the provider consumer handles fetching
+    await Provider.of<AdminProvider>(context, listen: false)
+        .fetchAllUsers(forceRefresh: true);
+    _filterUsers();
   }
 
   void _clearFilters() {
@@ -82,27 +84,27 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     setState(() {
       _selectedRole = 'All';
     });
+    _filterUsers(); // Re-apply filters after clearing
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final adminProvider = context.watch<AdminProvider>();
-    
-    final bool filtersActive = _selectedRole != 'All' || _roomFilterController.text.isNotEmpty;
+
+    final bool filtersActive =
+        _selectedRole != 'All' || _roomFilterController.text.isNotEmpty;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        // - Unified Heading Style
-        title: Text('MANAGE USERS', 
-          style: TextStyle(
-            color: theme.colorScheme.primary, 
-            fontSize: 22, 
-            fontWeight: FontWeight.w900, 
-            letterSpacing: 1.2,
-          )
-        ),
+        title: Text('MANAGE USERS',
+            style: TextStyle(
+              color: theme.colorScheme.primary,
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.2,
+            )),
         centerTitle: true,
         backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
@@ -113,89 +115,105 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               _isFilterExpanded ? Icons.filter_list_off : Icons.filter_list,
               color: filtersActive ? theme.colorScheme.primary : Colors.grey,
             ),
-            onPressed: () => setState(() => _isFilterExpanded = !_isFilterExpanded),
+            onPressed: () =>
+                setState(() => _isFilterExpanded = !_isFilterExpanded),
             tooltip: 'Filter Users',
           )
         ],
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSearchBar(theme),
-          _buildFilterCard(theme), 
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20.0, 12.0, 20.0, 12.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "Showing ${_filteredUsers.length} users",
-                  style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[600], fontWeight: FontWeight.bold),
-                ),
-                if (filtersActive || _searchController.text.isNotEmpty)
-                  GestureDetector(
-                    onTap: _clearFilters,
-                    child: Text(
-                      'Clear All',
-                      style: TextStyle(
-                        color: theme.colorScheme.primary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
+      // --- MODIFICATION: Added SafeArea wrapper ---
+      body: SafeArea(
+        top: false,
+        bottom: true,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSearchBar(theme),
+            _buildFilterCard(theme),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20.0, 12.0, 20.0, 12.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "Showing ${_filteredUsers.length} users",
+                    style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.grey[600], fontWeight: FontWeight.bold),
+                  ),
+                  if (filtersActive || _searchController.text.isNotEmpty)
+                    GestureDetector(
+                      onTap: _clearFilters,
+                      child: Text(
+                        'Clear All',
+                        style: TextStyle(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Expanded(
-            child: Consumer<AdminProvider>(
-              builder: (context, adminProvider, child) {
-                if (adminProvider.isLoading && adminProvider.users.isEmpty) {
-                  return Center(child: Lottie.asset('assets/loader.json', height: 100));
-                }
-                if (adminProvider.users.isEmpty) {
-                  return _buildEmptyState();
-                }
-                if (_filteredUsers.isEmpty) {
-                  return _buildInfoMessage(
-                    icon: Icons.search_off,
-                    message: 'No users found.',
-                  );
-                }
-                return RefreshIndicator(
-                  onRefresh: _refreshUsers,
-                  child: AnimationLimiter(
-                    child: ListView.separated(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                      itemCount: _filteredUsers.length,
-                      separatorBuilder: (ctx, i) => const Divider(height: 1, indent: 70),
-                      itemBuilder: (BuildContext context, int index) {
-                        final user = _filteredUsers[index];
-                        return AnimationConfiguration.staggeredList(
-                          position: index,
-                          duration: const Duration(milliseconds: 300),
-                          child: SlideAnimation(
-                            verticalOffset: 30.0,
-                            child: FadeInAnimation(
-                              child: _buildUserListTile(context, user, theme),
+            Expanded(
+              child: Consumer<AdminProvider>(
+                builder: (context, adminProvider, child) {
+                  // When provider notifies, we get the new user list
+                  // We must re-run the filter to update _filteredUsers
+                  // But we can't call setState in build.
+                  // We'll call _filterUsers() on success instead.
+
+                  if (adminProvider.isLoading && adminProvider.users.isEmpty) {
+                    return Center(
+                        child: Lottie.asset('assets/loader.json', height: 100));
+                  }
+                  if (adminProvider.users.isEmpty) {
+                    return _buildEmptyState();
+                  }
+                  if (_filteredUsers.isEmpty) {
+                    return _buildInfoMessage(
+                      icon: Icons.search_off,
+                      message: 'No users found.',
+                    );
+                  }
+                  return RefreshIndicator(
+                    onRefresh: _refreshUsers,
+                    child: AnimationLimiter(
+                      child: ListView.separated(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16.0, vertical: 8.0),
+                        itemCount: _filteredUsers.length,
+                        separatorBuilder: (ctx, i) =>
+                            const Divider(height: 1, indent: 70),
+                        itemBuilder: (BuildContext context, int index) {
+                          final user = _filteredUsers[index];
+                          return AnimationConfiguration.staggeredList(
+                            position: index,
+                            duration: const Duration(milliseconds: 300),
+                            child: SlideAnimation(
+                              verticalOffset: 30.0,
+                              child: FadeInAnimation(
+                                child:
+                                    _buildUserListTile(context, user, theme),
+                              ),
                             ),
-                          ),
-                        );
-                      },
+                          );
+                        },
+                      ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildSearchBar(ThemeData theme) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 8.0), // Reduced bottom padding
+      padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 8.0),
       child: Container(
         decoration: BoxDecoration(
           color: theme.cardTheme.color,
@@ -214,7 +232,8 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             hintText: 'Search by name...',
             prefixIcon: Icon(Icons.search, color: theme.colorScheme.primary),
             border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             hintStyle: TextStyle(color: Colors.grey.shade500),
           ),
         ),
@@ -258,7 +277,8 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             children: [
               Text(
                 "Filter Options",
-                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
               Row(
@@ -269,26 +289,36 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                       padding: const EdgeInsets.only(left: 10, right: 10),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey.withOpacity(0.3)),
-                        color: theme.scaffoldBackgroundColor.withOpacity(0.5),
+                        border:
+                            Border.all(color: Colors.grey.withOpacity(0.3)),
+                        color:
+                            theme.scaffoldBackgroundColor.withOpacity(0.5),
                       ),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
                           value: _selectedRole,
                           isExpanded: true,
-                          style: theme.textTheme.bodyLarge?.copyWith(fontSize: 14),
-                          icon: Icon(Icons.arrow_drop_down_rounded, color: theme.colorScheme.primary),
+                          style:
+                              theme.textTheme.bodyLarge?.copyWith(fontSize: 14),
+                          icon: Icon(Icons.arrow_drop_down_rounded,
+                              color: theme.colorScheme.primary),
                           dropdownColor: theme.cardTheme.color,
                           items: _roles.map((role) {
                             return DropdownMenuItem(
                               value: role,
                               child: Row(
                                 children: [
-                                  Icon(_getRoleIcon(role), size: 20, color: theme.colorScheme.primary),
+                                  Icon(_getRoleIcon(role),
+                                      size: 20,
+                                      color: theme.colorScheme.primary),
                                   const SizedBox(width: 8),
                                   Text(
                                     role.replaceAll('_', ' ').toUpperCase(),
-                                    style: TextStyle(fontSize: 14, fontWeight: role == _selectedRole ? FontWeight.bold : FontWeight.normal),
+                                    style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: role == _selectedRole
+                                            ? FontWeight.bold
+                                            : FontWeight.normal),
                                   ),
                                 ],
                               ),
@@ -297,7 +327,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                           onChanged: (value) {
                             if (value != null) {
                               setState(() => _selectedRole = value);
-                              _filterUsers(); 
+                              _filterUsers();
                             }
                           },
                         ),
@@ -313,25 +343,31 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                       decoration: InputDecoration(
                         labelText: 'Room',
                         hintText: 'No.',
-                        hintStyle: TextStyle(fontSize: 14, color: Colors.grey.shade500),
-                        labelStyle: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                        hintStyle: TextStyle(
+                            fontSize: 14, color: Colors.grey.shade500),
+                        labelStyle: TextStyle(
+                            fontSize: 14, color: Colors.grey.shade600),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                          borderSide:
+                              BorderSide(color: Colors.grey.withOpacity(0.3)),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                          borderSide:
+                              BorderSide(color: Colors.grey.withOpacity(0.3)),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: theme.colorScheme.primary, width: 2),
+                          borderSide: BorderSide(
+                              color: theme.colorScheme.primary, width: 2),
                         ),
                         prefixIcon: const Icon(Icons.room_outlined, size: 20),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 14),
                       ),
-                      style: theme.textTheme.bodyLarge?.copyWith(fontSize: 14),
-                      // No need for onChanged, listener is attached in initState
+                      style:
+                          theme.textTheme.bodyLarge?.copyWith(fontSize: 14),
                     ),
                   ),
                 ],
@@ -343,121 +379,99 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     );
   }
 
-  
   Widget _buildUserListTile(BuildContext context, User user, ThemeData theme) {
     final userRole = user.role ?? 'student';
     final roleColor = _getRoleColor(userRole);
-    final bool isSpecialRole = userRole == 'convenor' || userRole == 'mess_committee';
+    final isMessActive = user.isMessActive ?? false;
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      // 1. Avatar
       leading: CircleAvatar(
         radius: 24,
         backgroundColor: roleColor.withOpacity(0.1),
         child: Text(
           user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
-          style: TextStyle(fontSize: 18, color: roleColor, fontWeight: FontWeight.bold),
+          style: TextStyle(
+              fontSize: 18, color: roleColor, fontWeight: FontWeight.bold),
         ),
       ),
-      // 2. Title: Name
-      title: Row(
-        children: [
-          Flexible(
-            child: Text(
-              user.name,
-              style: theme.textTheme.bodyLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          if (isSpecialRole) ...[
-            const SizedBox(width: 6),
-            // "Mess Committee" Star Indicator
-            Icon(Icons.star_rounded, size: 16, color: roleColor),
-          ]
-        ],
+      title: Text(
+        user.name,
+        style: theme.textTheme.bodyLarge?.copyWith(
+          fontWeight: FontWeight.bold,
+          fontSize: 16,
+        ),
+        overflow: TextOverflow.ellipsis,
       ),
-      // 3. Subtitle: Room • Role Chip • Email
       subtitle: Padding(
         padding: const EdgeInsets.only(top: 4.0),
         child: Row(
           children: [
             Text(
               "Room ${user.roomNumber}",
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 13, fontWeight: FontWeight.w500),
+              style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500),
             ),
-            if (isSpecialRole) ...[
-              const SizedBox(width: 8),
-              // Micro-Chip for Role
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: roleColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: roleColor.withOpacity(0.3), width: 0.5),
-                ),
-                child: Text(
-                  userRole == 'mess_committee' ? 'COMMITTEE' : 'CONVENOR',
-                  style: TextStyle(
-                    fontSize: 9, 
-                    fontWeight: FontWeight.bold, 
-                    color: roleColor,
-                    letterSpacing: 0.5
-                  ),
-                ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: roleColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(
+                    color: roleColor.withOpacity(0.3), width: 0.5),
               ),
-            ],
+              child: Text(
+                userRole.replaceAll('_', ' ').toUpperCase(),
+                style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    color: roleColor,
+                    letterSpacing: 0.5),
+              ),
+            ),
           ],
         ),
       ),
-      // 4. Trailing: Toggle + Context Menu
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Mess Toggle
           Transform.scale(
             scale: 0.8,
             child: Switch(
-              value: user.isMessActive ?? false,
+              value: isMessActive,
               activeColor: Colors.green,
-              onChanged: (bool value) async {
-                final adminProvider = Provider.of<AdminProvider>(context, listen: false);
-                final success = await adminProvider.updateUserMessStatus(user.id, value);
-                if (mounted) {
-                  if (success) {
-                     _refreshUsers();
-                  } else {
-                     ScaffoldMessenger.of(context).showSnackBar(
-                       SnackBar(content: Text(adminProvider.error ?? 'Failed to update status.'), backgroundColor: Colors.red),
-                     );
-                  }
-                }
+              onChanged: (newValue) {
+                // Show confirmation dialog before making any changes
+                _showToggleMessStatusDialog(context, user, newValue);
               },
             ),
           ),
-          // Context Menu (The "⋮" Icon)
           PopupMenuButton<String>(
             icon: Icon(Icons.more_vert_rounded, color: Colors.grey.shade400),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             onSelected: (value) {
-              if (value == 'role') _showChangeRoleBottomSheet(context, user);
-              // --- (7) MODIFICATION: Call new delete dialog ---
-              if (value == 'delete') _showSecureDeleteUserDialog(context, user); 
+              if (value == 'role')
+                _showChangeRoleBottomSheet(context, user);
+              if (value == 'delete')
+                _showSecureDeleteUserDialog(context, user);
             },
             itemBuilder: (context) => [
               PopupMenuItem(
                 value: 'role',
                 child: Row(
                   children: [
-                    Icon(Icons.badge_outlined, color: theme.colorScheme.primary, size: 20),
+                    Icon(Icons.badge_outlined,
+                        color: theme.colorScheme.primary, size: 20),
                     const SizedBox(width: 12),
                     const Text('Change Role'),
                   ],
                 ),
               ),
+              const PopupMenuDivider(),
               const PopupMenuItem(
                 value: 'delete',
                 child: Row(
@@ -475,27 +489,31 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     );
   }
 
-
   void _showChangeRoleBottomSheet(BuildContext context, User user) {
     String selectedRole = user.role ?? 'student';
 
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      isScrollControlled: true, // Allow modal to resize with keyboard
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      isScrollControlled: true,
       builder: (bottomSheetContext) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setModalState) {
             return Padding(
-              // Added padding for viewInsets
-              padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+              padding: EdgeInsets.fromLTRB(
+                  20, 20, 20, MediaQuery.of(context).viewInsets.bottom + 20),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Change Role for ${user.name}', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+                  Text('Change Role for ${user.name}',
+                      style: Theme.of(context)
+                          .textTheme
+                          .headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 20),
-                  ..._roles.where((role) => role != 'All').map((role) { 
+                  ..._roles.where((role) => role != 'All').map((role) {
                     return RadioListTile<String>(
                       title: Text(role.replaceAll('_', ' ').toUpperCase()),
                       value: role,
@@ -508,26 +526,66 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                     );
                   }).toList(),
                   const SizedBox(height: 20),
-                  SizedBox(
+                  Container(
                     width: double.infinity,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      gradient: const LinearGradient(
+                        colors: [
+                          Color(0xFF00D4FF), // Cyan
+                          Color(0xFF007BFF), // Blue
+                        ],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF00D4FF).withOpacity(0.4),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
                     child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-                      child: const Text('Save Changes'),
                       onPressed: () async {
-                        final adminProvider = Provider.of<AdminProvider>(context, listen: false);
+                        final adminProvider =
+                            Provider.of<AdminProvider>(context, listen: false);
                         Navigator.of(bottomSheetContext).pop();
-                        final success = await adminProvider.updateUserRole(user.id, selectedRole);
+                        final success = await adminProvider.updateUserRole(
+                            user.id, selectedRole);
                         if (mounted) {
-                           ScaffoldMessenger.of(context).showSnackBar(
+                          ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(success ? 'User role updated successfully!' : adminProvider.error ?? 'Failed to update user role.'),
-                              backgroundColor: success ? Colors.green : Colors.red,
+                              content: Text(success
+                                  ? 'User role updated successfully!'
+                                  : adminProvider.error ??
+                                      'Failed to update user role.'),
+                              backgroundColor:
+                                  success ? Colors.green : Colors.red,
                             ),
                           );
+                          if (success)
+                            _filterUsers(); // Re-filter on success
                         }
                       },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: const Text(
+                        'Save Changes',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
-                  )
+                  ),
                 ],
               ),
             );
@@ -537,15 +595,14 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     );
   }
 
-  // --- (9) MODIFICATION: Secure delete dialog with rounded input ---
   void _showSecureDeleteUserDialog(BuildContext context, User user) {
-    final TextEditingController deleteConfirmController = TextEditingController();
-    bool isDeleteEnabled = false; // State for the dialog
+    final TextEditingController deleteConfirmController =
+        TextEditingController();
+    bool isDeleteEnabled = false;
 
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
-        // Use StatefulBuilder to manage the dialog's internal state
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
@@ -560,18 +617,21 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   const SizedBox(height: 16),
                   Text(
                     'Please type "DELETE" to confirm:',
-                    style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.error),
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.error),
                   ),
                   const SizedBox(height: 8),
                   TextField(
                     controller: deleteConfirmController,
                     autofocus: true,
-                    decoration: InputDecoration( // Changed to non-const
+                    decoration: InputDecoration(
                       hintText: 'DELETE',
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10.0), // Rounded input
+                        borderRadius: BorderRadius.circular(10.0),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
                     ),
                     onChanged: (value) {
                       setDialogState(() {
@@ -587,33 +647,95 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   onPressed: () => Navigator.of(dialogContext).pop(),
                 ),
                 TextButton(
-                  // Enable/disable based on state
-                  onPressed: isDeleteEnabled 
-                    ? () async {
-                        final adminProvider = Provider.of<AdminProvider>(context, listen: false);
-                        Navigator.of(dialogContext).pop();
-                        final success = await adminProvider.deleteUser(user.id);
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(success ? 'User deleted successfully!' : adminProvider.error ?? 'Failed to delete user.'),
-                              backgroundColor: success ? Colors.green : Colors.red,
-                            ),
-                          );
+                  onPressed: isDeleteEnabled
+                      ? () async {
+                          final adminProvider = Provider.of<AdminProvider>(
+                              context,
+                              listen: false);
+                          Navigator.of(dialogContext).pop();
+                          final success =
+                              await adminProvider.deleteUser(user.id);
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(success
+                                    ? 'User deleted successfully!'
+                                    : adminProvider.error ??
+                                        'Failed to delete user.'),
+                                backgroundColor:
+                                    success ? Colors.green : Colors.red,
+                              ),
+                            );
+                            if (success)
+                              _filterUsers(); // Re-filter on success
+                          }
                         }
-                      }
-                    : null, 
-                  child: Text(
-                    'Delete', 
-                    // Change color based on state
-                    style: TextStyle(
-                      color: isDeleteEnabled ? Colors.red : Colors.grey
-                    )
-                  ),
+                      : null,
+                  child: Text('Delete',
+                      style: TextStyle(
+                          color:
+                              isDeleteEnabled ? Colors.red : Colors.grey)),
                 ),
               ],
             );
           },
+        );
+      },
+    );
+  }
+
+  // ---
+  // --- 1. MODIFIED: _showToggleMessStatusDialog
+  // ---
+  void _showToggleMessStatusDialog(
+      BuildContext context, User user, bool newValue) {
+    final String action = newValue ? 'Activate' : 'Deactivate';
+    final Color actionColor = newValue ? Colors.green : Colors.orange;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text('$action Mess?'),
+          content: Text(
+            'Are you sure you want to $action mess booking for "${user.name}"?',
+          ),
+          actions: [
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(dialogContext).pop(),
+            ),
+            TextButton(
+              child: Text(action, style: TextStyle(color: actionColor)),
+              onPressed: () async {
+                final adminProvider =
+                    Provider.of<AdminProvider>(context, listen: false);
+                Navigator.of(dialogContext).pop();
+
+                final success = await adminProvider.updateUserMessStatus(
+                    user.id, newValue);
+
+                if (mounted) {
+                  if (success) {
+                    // --- THIS IS THE FIX ---
+                    // Provider already fetched the new list.
+                    // We just need to re-apply local filters
+                    // which calls setState() and updates the UI.
+                    _filterUsers();
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content: Text(adminProvider.error ??
+                              'Failed to update status.'),
+                          backgroundColor: Colors.red),
+                    );
+                  }
+                }
+              },
+            ),
+          ],
         );
       },
     );
@@ -627,7 +749,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         return Colors.pink.shade600;
       case 'student':
       default:
-        return Colors.blue.shade600; // Consistent primary
+        return Colors.blue.shade600;
     }
   }
 
@@ -638,14 +760,17 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         children: [
           Lottie.asset('assets/empty_list.json', width: 200),
           const SizedBox(height: 20),
-          const Text('No Users Found', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          const Text('No Users Found',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          const Text('There are no users to manage.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
+          const Text('There are no users to manage.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey)),
         ],
       ),
     );
   }
-  
+
   Widget _buildInfoMessage({required IconData icon, required String message}) {
     return Center(
       child: Column(
@@ -653,7 +778,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         children: [
           Icon(icon, size: 60, color: Colors.grey[300]),
           const SizedBox(height: 20),
-          Text(message, textAlign: TextAlign.center, style: TextStyle(fontSize: 16, color: Colors.grey[600])),
+          Text(message,
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16, color: Colors.grey[600])),
         ],
       ),
     );

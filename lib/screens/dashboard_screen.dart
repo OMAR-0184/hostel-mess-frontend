@@ -10,7 +10,7 @@ import 'package:intl/intl.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 
 // Import NoticeScreen for the "View All" navigation
-import 'notice_screen.dart'; 
+import 'notice_screen.dart';
 import 'feedback_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -22,9 +22,6 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen>
     with AutomaticKeepAliveClientMixin {
-  
-  // Initialized to false. If this is null due to hot reload, the app might crash.
-  // A Hot Restart fixes this.
   bool _showAllNotices = false;
 
   @override
@@ -55,8 +52,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   Future<void> _refreshData() async {
     final bookingProvider =
         Provider.of<BookingProvider>(context, listen: false);
-    final noticeProvider =
-        Provider.of<NoticeProvider>(context, listen: false);
+    final noticeProvider = Provider.of<NoticeProvider>(context, listen: false);
 
     await Future.wait([
       bookingProvider.fetchTodaysBooking(forceRefresh: true),
@@ -81,9 +77,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: isDarkMode 
-                    ? [const Color(0xFF020617), const Color(0xFF0F172A)] 
-                    : [const Color(0xFFF1F5F9), const Color(0xFFE2E8F0)], 
+                  colors: isDarkMode
+                      ? [const Color(0xFF020617), const Color(0xFF0F172A)]
+                      : [const Color(0xFFF1F5F9), const Color(0xFFE2E8F0)],
                 ),
               ),
             ),
@@ -96,22 +92,22 @@ class _DashboardScreenState extends State<DashboardScreen>
               width: 300,
               height: 300,
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: theme.colorScheme.primary.withOpacity(isDarkMode ? 0.1 : 0.05),
-                boxShadow: [
-                  BoxShadow(
-                    color: theme.colorScheme.primary.withOpacity(isDarkMode ? 0.1 : 0.05),
-                    blurRadius: 100,
-                    spreadRadius: 50,
-                  )
-                ]
-              ),
+                  shape: BoxShape.circle,
+                  color: theme.colorScheme.primary
+                      .withOpacity(isDarkMode ? 0.1 : 0.05),
+                  boxShadow: [
+                    BoxShadow(
+                      color: theme.colorScheme.primary
+                          .withOpacity(isDarkMode ? 0.1 : 0.05),
+                      blurRadius: 100,
+                      spreadRadius: 50,
+                    )
+                  ]),
             ),
           ),
 
           // MAIN CONTENT
           SafeArea(
-            // We set bottom to false so padding is controlled by the SingleChildScrollView
             bottom: false,
             child: RefreshIndicator(
               onRefresh: _refreshData,
@@ -119,9 +115,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               child: AnimationLimiter(
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  // --- FIX: Added bottom padding of 100 ---
-                  padding:
-                      const EdgeInsets.fromLTRB(20.0, 24.0, 20.0, 100.0),
+                  padding: const EdgeInsets.fromLTRB(20.0, 24.0, 20.0, 100.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: AnimationConfiguration.toStaggeredList(
@@ -151,7 +145,6 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _buildHeader(User? user, ThemeData theme) {
-    final isDarkMode = theme.brightness == Brightness.dark;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -202,8 +195,8 @@ class _DashboardScreenState extends State<DashboardScreen>
             shape: BoxShape.circle,
             gradient: const LinearGradient(
               colors: [
-                Color(0xFF00D4FF), 
-                Color(0xFF007BFF), 
+                Color(0xFF00D4FF),
+                Color(0xFF007BFF),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -235,7 +228,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   Widget _buildTodaysBookingSection(ThemeData theme) {
     final isDarkMode = theme.brightness == Brightness.dark;
-    
+
     final lunchGradient = [
       const Color(0xFFFF9966),
       const Color(0xFFFF5E62),
@@ -250,11 +243,11 @@ class _DashboardScreenState extends State<DashboardScreen>
       children: [
         Row(
           children: [
-            Icon(Icons.restaurant_menu_rounded, 
+            Icon(Icons.restaurant_menu_rounded,
                 color: theme.textTheme.titleLarge?.color, size: 28),
             const SizedBox(width: 10),
             Text(
-              "Today's Menu",
+              "Your Meal",
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -266,16 +259,13 @@ class _DashboardScreenState extends State<DashboardScreen>
           builder: (context, provider, child) {
             if (provider.isLoadingTodaysBooking &&
                 provider.todaysBooking == null) {
-              return const Center(
-                  child: CircularProgressIndicator());
+              return const Center(child: CircularProgressIndicator());
             }
-            
-            final lunchItems = provider.todaysBooking?['lunch_pick']
-                    as List<dynamic>? ??
-                [];
-            final dinnerItems = provider.todaysBooking?['dinner_pick']
-                    as List<dynamic>? ??
-                [];
+
+            final lunchItems =
+                provider.todaysBooking?['lunch_pick'] as List<dynamic>? ?? [];
+            final dinnerItems =
+                provider.todaysBooking?['dinner_pick'] as List<dynamic>? ?? [];
 
             return IntrinsicHeight(
               child: Row(
@@ -352,12 +342,12 @@ class _DashboardScreenState extends State<DashboardScreen>
                   offset: const Offset(0, 4),
                 )
               ],
-        border: isBooked 
-          ? null 
-          : Border.all(
-              color: isDarkMode ? Colors.transparent : Colors.black,
-              width: 1,
-            ),
+        border: isBooked
+            ? null
+            : Border.all(
+                color: isDarkMode ? Colors.transparent : Colors.black,
+                width: 1,
+              ),
       ),
       child: Material(
         color: Colors.transparent,
@@ -365,7 +355,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           padding: const EdgeInsets.all(20.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -391,7 +381,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                     title,
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: isBooked ? Colors.white : theme.textTheme.bodyLarge?.color,
+                      color: isBooked
+                          ? Colors.white
+                          : theme.textTheme.bodyLarge?.color,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -405,12 +397,12 @@ class _DashboardScreenState extends State<DashboardScreen>
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               if (isBooked)
                 Wrap(
                   spacing: 4.0,
                   runSpacing: 4.0,
-                  children: bookedItems.take(3).map((item) {
+                  children: bookedItems.map((item) {
                     return Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 4),
@@ -463,7 +455,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       const Color(0xFFE8F5E9),
       const Color(0xFFFFF3E0),
     ];
-    
+
     final List<Color> darkCardColors = [
       const Color(0xFF1565C0).withOpacity(0.3),
       const Color(0xFF6A1B9A).withOpacity(0.3),
@@ -488,7 +480,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           children: [
             Row(
               children: [
-                Icon(Icons.campaign_rounded, 
+                Icon(Icons.campaign_rounded,
                     color: theme.textTheme.titleLarge?.color, size: 28),
                 const SizedBox(width: 10),
                 Text(
@@ -501,18 +493,14 @@ class _DashboardScreenState extends State<DashboardScreen>
             ),
             TextButton(
               onPressed: () {
-                Navigator.push(
-                  context, 
-                  MaterialPageRoute(builder: (_) => const NoticeScreen())
-                );
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const NoticeScreen()));
               },
-              child: Text(
-                "View All", 
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.primary,
-                )
-              ),
+              child: Text("View All",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.primary,
+                  )),
             ),
           ],
         ),
@@ -539,33 +527,29 @@ class _DashboardScreenState extends State<DashboardScreen>
                 ),
               );
             }
-            
-            // COLLAPSIBLE LOGIC
-            // Using 3 when expanded, 1 when collapsed.
-            // The variable _showAllNotices is non-nullable boolean.
+
             final int countToShow = _showAllNotices ? 3 : 1;
             final noticesToShow = provider.notices.take(countToShow).toList();
             final bool canExpand = provider.notices.length > 1;
-            
+
             return Column(
               children: [
                 ...noticesToShow.asMap().entries.map((entry) {
                   final index = entry.key;
                   final notice = entry.value;
                   final colorIndex = index % lightCardColors.length;
-                  
+
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 16.0),
                     child: DashboardNoticeCard(
                       notice: notice,
-                      backgroundColor: isDarkMode 
-                          ? darkCardColors[colorIndex] 
+                      backgroundColor: isDarkMode
+                          ? darkCardColors[colorIndex]
                           : lightCardColors[colorIndex],
                       accentColor: accentColors[colorIndex],
                     ),
                   );
                 }).toList(),
-
                 if (canExpand)
                   GestureDetector(
                     onTap: () {
@@ -586,8 +570,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                             ),
                           ),
                           Icon(
-                            _showAllNotices 
-                                ? Icons.keyboard_arrow_up_rounded 
+                            _showAllNotices
+                                ? Icons.keyboard_arrow_up_rounded
                                 : Icons.keyboard_arrow_down_rounded,
                             color: theme.colorScheme.primary,
                           )
@@ -611,10 +595,13 @@ class _DashboardScreenState extends State<DashboardScreen>
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: isDarkMode ? Colors.teal.withOpacity(0.2) : Colors.teal.shade50,
+            color:
+                isDarkMode ? Colors.teal.withOpacity(0.2) : Colors.teal.shade50,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: isDarkMode ? Colors.teal.withOpacity(0.4) : Colors.teal.shade100,
+              color: isDarkMode
+                  ? Colors.teal.withOpacity(0.4)
+                  : Colors.teal.shade100,
             ),
           ),
           child: Row(
@@ -625,7 +612,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                   color: Colors.teal.withOpacity(0.15),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.tips_and_updates_outlined, color: Colors.teal),
+                child: const Icon(Icons.tips_and_updates_outlined,
+                    color: Colors.teal),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -634,12 +622,18 @@ class _DashboardScreenState extends State<DashboardScreen>
                   children: [
                     const Text(
                       "Daily Health Tip",
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.teal),
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Colors.teal),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       "Stay hydrated! Drink at least 8 glasses of water daily.",
-                      style: TextStyle(color: theme.textTheme.bodyMedium?.color?.withOpacity(0.8), fontSize: 13),
+                      style: TextStyle(
+                          color: theme.textTheme.bodyMedium?.color
+                              ?.withOpacity(0.8),
+                          fontSize: 13),
                     ),
                   ],
                 ),
@@ -648,17 +642,16 @@ class _DashboardScreenState extends State<DashboardScreen>
           ),
         ),
         const SizedBox(height: 16),
-        
         GestureDetector(
           onTap: () {
-            // Removed 'const' here
-            Navigator.push(context, MaterialPageRoute(builder: (_) => FeedbackScreen()));
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const FeedbackScreen()));
           },
           child: Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: isDarkMode 
+                colors: isDarkMode
                     ? [Colors.purple.shade900, Colors.deepPurple.shade900]
                     : [const Color(0xFF6A11CB), const Color(0xFF2575FC)],
                 begin: Alignment.topLeft,
@@ -681,12 +674,16 @@ class _DashboardScreenState extends State<DashboardScreen>
                   children: [
                     const Text(
                       "Have a suggestion?",
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       "Rate today's meal & help us improve.",
-                      style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 12),
+                      style: TextStyle(
+                          color: Colors.white.withOpacity(0.9), fontSize: 12),
                     ),
                   ],
                 ),
@@ -723,6 +720,7 @@ class DashboardNoticeCard extends StatefulWidget {
   State<DashboardNoticeCard> createState() => _DashboardNoticeCardState();
 }
 
+// --- FIX: Added 'extends State<DashboardNoticeCard>' ---
 class _DashboardNoticeCardState extends State<DashboardNoticeCard> {
   bool _isExpanded = true;
 
@@ -751,7 +749,8 @@ class _DashboardNoticeCardState extends State<DashboardNoticeCard> {
             ),
           ],
           border: Border.all(
-            color: isDarkMode ? widget.accentColor.withOpacity(0.2) : Colors.black,
+            color:
+                isDarkMode ? widget.accentColor.withOpacity(0.2) : Colors.black,
             width: 1,
           ),
         ),
@@ -846,7 +845,8 @@ class _DashboardNoticeCardState extends State<DashboardNoticeCard> {
                               widget.notice.content,
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 height: 1.6,
-                                color: theme.textTheme.bodyLarge?.color?.withOpacity(0.8),
+                                color: theme.textTheme.bodyLarge?.color
+                                    ?.withOpacity(0.8),
                               ),
                             ),
                           ],
