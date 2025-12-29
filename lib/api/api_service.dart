@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  final String _baseUrl = "https://hostel-mess-backend.onrender.com/";
+  final String _baseUrl = "https://hostel-mess-backend.onrender.com";
 
   Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
