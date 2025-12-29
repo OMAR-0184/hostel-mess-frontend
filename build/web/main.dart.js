@@ -52664,7 +52664,7 @@ d5(a,b){return this.xg(0,b,null)},
 a9x(a,b,c){var s=0,r=A.L(t.Wd),q,p=this,o,n
 var $async$xg=A.H(function(d,e){if(d===1)return A.I(e,r)
 while(true)switch(s){case 0:o=A
-n=A.fY("API_URL"+b,0,null)
+n=A.fY("https://hostel-mess-backend.onrender.com"+b,0,null)
 s=3
 return A.E(p.yn(c),$async$xg)
 case 3:q=o.b41(n,e)
@@ -52675,7 +52675,7 @@ return A.K($async$xg,r)},
 oP(a,b){return this.aKP(a,b)},
 aKP(a,b){var s=0,r=A.L(t.Wd),q,p=this,o,n
 var $async$oP=A.H(function(c,d){if(c===1)return A.I(d,r)
-while(true)switch(s){case 0:o=A.fY("API_URL"+a,0,null)
+while(true)switch(s){case 0:o=A.fY("https://hostel-mess-backend.onrender.com"+a,0,null)
 s=3
 return A.E(p.Lp(),$async$oP)
 case 3:n=d
@@ -52687,7 +52687,7 @@ return A.K($async$oP,r)},
 qH(a,b){return this.aKF(a,b)},
 aKF(a,b){var s=0,r=A.L(t.Wd),q,p=this,o,n
 var $async$qH=A.H(function(c,d){if(c===1)return A.I(d,r)
-while(true)switch(s){case 0:o=A.fY("API_URL"+a,0,null)
+while(true)switch(s){case 0:o=A.fY("https://hostel-mess-backend.onrender.com"+a,0,null)
 s=3
 return A.E(p.Lp(),$async$qH)
 case 3:n=d
@@ -52700,7 +52700,7 @@ vV(a,b){return this.aEw(0,b)},
 aEw(a,b){var s=0,r=A.L(t.Wd),q,p=this,o,n
 var $async$vV=A.H(function(c,d){if(c===1)return A.I(d,r)
 while(true)switch(s){case 0:o=A
-n=A.fY("API_URL"+b,0,null)
+n=A.fY("https://hostel-mess-backend.onrender.com"+b,0,null)
 s=3
 return A.E(p.Lp(),$async$vV)
 case 3:q=o.b4M(n,d)
@@ -52712,7 +52712,7 @@ R2(a,b){return this.aKS(a,b)},
 aKS(a,b){var s=0,r=A.L(t.Wd),q,p
 var $async$R2=A.H(function(c,d){if(c===1)return A.I(d,r)
 while(true)switch(s){case 0:p=t.N
-q=A.b4r(A.fY("API_URL"+a,0,null),b,A.ap(["Content-Type","application/x-www-form-urlencoded"],p,p))
+q=A.b4r(A.fY("https://hostel-mess-backend.onrender.com"+a,0,null),b,A.ap(["Content-Type","application/x-www-form-urlencoded"],p,p))
 s=1
 break
 case 1:return A.J(q,r)}})

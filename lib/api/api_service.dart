@@ -12,16 +12,17 @@ class ApiService {
     return prefs.getString('token');
   }
 
-   Future<Map<String, String>> _getHeaders({String? temporaryToken}) async {
+  Future<Map<String, String>> _getHeaders({String? temporaryToken}) async {
     final storedToken = await _getToken();
-    final token = temporaryToken ?? storedToken; 
+    final token = temporaryToken ?? storedToken;
 
     return {
       'Content-Type': 'application/json; charset=UTF-8',
       if (token != null) 'Authorization': 'Bearer $token',
     };
   }
- Future<http.Response> get(String endpoint, {String? temporaryToken}) async {
+
+  Future<http.Response> get(String endpoint, {String? temporaryToken}) async {
     final url = Uri.parse('$_baseUrl$endpoint');
     final headers = await _getHeaders(temporaryToken: temporaryToken);
     return http.get(url, headers: headers);
@@ -32,8 +33,9 @@ class ApiService {
     final headers = await _getHeaders();
     return http.post(url, headers: headers, body: json.encode(body));
   }
-  
-  Future<http.Response> patch(String endpoint, Map<String, dynamic> body) async {
+
+  Future<http.Response> patch(
+      String endpoint, Map<String, dynamic> body) async {
     final url = Uri.parse('$_baseUrl$endpoint');
     final headers = await _getHeaders();
     return http.patch(url, headers: headers, body: json.encode(body));
@@ -46,7 +48,8 @@ class ApiService {
   }
 
   // Special post method for login which uses x-www-form-urlencoded
-  Future<http.Response> postUrlEncoded(String endpoint, Map<String, String> body) async {
+  Future<http.Response> postUrlEncoded(
+      String endpoint, Map<String, String> body) async {
     final url = Uri.parse('$_baseUrl$endpoint');
     return http.post(
       url,
